@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Life Organizer</title>
+    <!-- Tailwind Setup & Config -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        surface: 'var(--surface)',
+                        card: 'var(--card)',
+                        sidebar: 'var(--sidebar)',
+                        borderMain: 'var(--border-main)',
+                        textMain: 'var(--text-main)',
+                        textMuted: 'var(--text-muted)',
+                        accent: 'var(--accent)',
+                        danger: 'var(--danger)',
+                    },
+                    fontFamily: {
+                        main: 'var(--font-main)',
+                        display: 'var(--font-display)',
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Fonts for all themes -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Nunito:wght@400;600;700;900&family=VT323&display=swap" rel="stylesheet">
+    <style>
+        /* Base Theme Variables */
+        :root, [data-theme="light"] {
+            --surface: #f8fafc;
+            --card: #ffffff;
+            --sidebar: #0f172a;
+            --border-main: #e2e8f0;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --accent: #4f46e5;
+            --danger: #ef4444;
+            --font-main: 'Plus Jakarta Sans', sans-serif;
+            --font-display: 'Plus Jakarta Sans', sans-serif;
+            --card-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05);
+            --header-bg: rgba(255, 255, 255, 0.85);
+        }
+        
+        [data-theme="dark"] {
+            --surface: #0f172a;
+            --card: #1e293b;
+            --sidebar: #020617;
+            --border-main: #334155;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent: #6366f1;
+            --danger: #f87171;
+            --font-main: 'Plus Jakarta Sans', sans-serif;
+            --font-display: 'Plus Jakarta Sans', sans-serif;
+            --card-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.2);
+            --header-bg: rgba(15, 23, 42, 0.85);
+        }
+        
+        [data-theme="gaming"] {
+            --surface: #0f0f1b;
+            --card: #1a1a2e;
+            --sidebar: #1a1a2e;
+            --border-main: rgba(99, 102, 241, 0.3);
+            --text-main: #ffffff;
+            --text-muted: #a5b4fc;
+            --accent: #ec4899;
+            --danger: #ef4444;
+            --font-main: 'Nunito', sans-serif;
+            --font-display: 'VT323', monospace;
+            --card-shadow: 0 0 15px rgba(99,102,241,0.1);
+            --header-bg: rgba(26, 26, 46, 0.85);
+        }
+
+        body {
+            font-family: var(--font-main);
+            background-color: var(--surface);
+            color: var(--text-main);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 10px; }
+
+        /* Shared Components */
+        .glass-header {
+            background-color: var(--header-bg);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-main);
+        }
+        [data-theme="gaming"] .glass-header { border-bottom-width: 2px; }
+
+        .item-card {
+            background-color: var(--card);
+            border: 1px solid var(--border-main);
+            box-shadow: var(--card-shadow);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .item-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--accent);
+        }
+        
+        /* Gaming Specific Overrides */
+        [data-theme="gaming"] .item-card { border-width: 2px; }
+        [data-theme="gaming"] .item-card:hover {
+            box-shadow: 0 0 20px rgba(236, 72, 153, 0.3);
+            transform: translateY(-4px) scale(1.02);
+        }
+
+        .primary-btn {
+            background-color: var(--accent);
+            color: white;
+            transition: all 0.2s;
+        }
+        .primary-btn:hover { opacity: 0.9; }
+        [data-theme="gaming"] .primary-btn {
+            background: linear-gradient(135deg, #ec4899, #8b5cf6);
+            border-bottom: 4px solid #5b21b6;
+        }
+        [data-theme="gaming"] .primary-btn:active {
+            border-bottom: 0px;
+            transform: translateY(4px);
+        }
+
+        .action-btn { opacity: 0; transform: scale(0.9); transition: all 0.2s ease; }
+        .item-card:hover .action-btn { opacity: 1; transform: scale(1); }
+        @media (max-width: 768px) { .action-btn { opacity: 1; transform: scale(1); } }
+
+        .fade-in { animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        #loading-overlay { background: var(--surface); }
+    </style>
+    <script>
+        // Apply theme immediately to prevent flashing
+        const savedTheme = localStorage.getItem('organizer_theme') || 'light';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+    </script>
+</head>
+<body class="h-screen flex overflow-hidden antialiased font-main text-textMain">
+
+    <!-- Loading Screen -->
+    <div id="loading-overlay" class="fixed inset-0 z-[100] flex justify-center items-center transition-opacity duration-500">
+        <div class="flex flex-col items-center gap-4">
+            <div class="w-10 h-10 border-4 border-borderMain border-t-accent rounded-full animate-spin"></div>
+            <p class="text-textMuted font-bold animate-pulse" id="loading-text">Loading...</p>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="w-72 bg-sidebar flex flex-col transition-transform duration-300 absolute z-30 h-full md:relative -translate-x-full md:translate-x-0 border-r border-borderMain shadow-xl">
+        <div class="p-8 pb-4 flex justify-between items-center">
+            <h1 id="app-logo" class="flex items-center gap-3 text-white">
+                <div class="bg-accent/20 p-2 rounded-xl">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                    </svg>
+                </div>
+                <span id="app-logo-text" class="text-xl font-bold tracking-tight font-main">Organizer</span>
+            </h1>
+            <button onclick="window.toggleSidebar()" class="md:hidden text-slate-400 hover:text-white transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+
+        <div class="px-6 py-2 flex justify-between items-center mt-2">
+            <p id="sidebar-subtitle" class="text-xs font-semibold uppercase tracking-wider text-slate-500">My Collections</p>
+            <div class="flex items-center gap-2 px-2 py-1 rounded bg-black/30 border border-white/5">
+                <div id="status-dot" class="h-2 w-2 rounded-full bg-slate-500"></div>
+                <span id="status-text" class="text-[10px] text-slate-400 font-bold uppercase">Checking...</span>
+            </div>
+        </div>
+
+        <nav class="flex-1 overflow-y-auto px-4 space-y-1 mt-2" id="sidebar-list">
+            <!-- Sections inserted here -->
+        </nav>
+
+        <!-- Theme Switcher -->
+        <div class="px-6 py-4 flex gap-2 justify-center border-t border-borderMain mt-auto bg-black/10">
+            <button onclick="window.setTheme('light')" id="btn-theme-light" class="p-2 rounded-lg transition-all text-xs flex-1 flex justify-center items-center gap-1 font-medium text-slate-400 hover:text-white hover:bg-white/5 border border-transparent" title="Light Mode">☀️ Light</button>
+            <button onclick="window.setTheme('dark')" id="btn-theme-dark" class="p-2 rounded-lg transition-all text-xs flex-1 flex justify-center items-center gap-1 font-medium text-slate-400 hover:text-white hover:bg-white/5 border border-transparent" title="Dark Mode">🌙 Dark</button>
+            <button onclick="window.setTheme('gaming')" id="btn-theme-gaming" class="p-2 rounded-lg transition-all text-xs flex-1 flex justify-center items-center gap-1 font-medium text-slate-400 hover:text-white hover:bg-white/5 border border-transparent" title="Gaming Mode">🎮 Game</button>
+        </div>
+
+        <div class="p-6 border-t border-borderMain">
+            <button onclick="window.openModal('section')" class="w-full flex items-center justify-center gap-2 primary-btn py-3 px-4 rounded-xl font-bold text-sm transform active:scale-95 shadow-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                <span id="btn-new-collection-text">Create Collection</span>
+            </button>
+        </div>
+    </aside>
+
+    <!-- Overlay for mobile sidebar -->
+    <div id="sidebar-overlay" onclick="window.toggleSidebar()" class="fixed inset-0 bg-black/60 z-20 hidden md:hidden backdrop-blur-sm transition-opacity"></div>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col h-full bg-surface relative w-full">
+        <!-- Header -->
+        <header class="glass-header p-6 flex justify-between items-center z-10 sticky top-0">
+            <div class="flex items-center gap-4">
+                <button onclick="window.toggleSidebar()" class="md:hidden text-textMuted hover:text-textMain p-1 rounded-md hover:bg-black/5 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                </button>
+                <div>
+                    <h2 id="active-section-title" class="text-2xl font-bold text-textMain tracking-tight">Loading...</h2>
+                    <p class="text-sm text-textMuted font-medium mt-0.5 uppercase tracking-wider text-[11px]" id="header-subtitle">Manage your items</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-4">
+                <span id="item-count" class="hidden sm:inline-flex bg-card text-accent text-xs px-3 py-1.5 rounded-full font-bold border border-borderMain shadow-sm">0 items</span>
+                <div class="h-6 w-[1px] bg-borderMain mx-1 hidden sm:block"></div>
+                <button onclick="window.deleteCurrentSection()" id="delete-section-btn" class="text-textMuted hover:text-danger hover:bg-danger/10 p-2.5 rounded-xl transition-all" title="Delete this collection">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                </button>
+                <button onclick="window.openModal('item')" class="primary-btn px-5 py-2.5 rounded-xl font-bold shadow-md flex items-center gap-2 tracking-wide transform active:scale-95">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                    <span class="hidden sm:inline" id="btn-add-item-text">Add Item</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Content Area -->
+        <div id="content-area" class="flex-1 overflow-y-auto p-6 sm:p-8">
+            <div id="items-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"></div>
+            
+            <div id="empty-state" class="hidden h-full flex flex-col items-center justify-center text-textMuted pb-20">
+                <div class="bg-card p-6 rounded-full shadow-sm mb-6 border border-borderMain">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-accent opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                    </svg>
+                </div>
+                <h3 id="empty-state-title" class="text-xl font-bold text-textMain mb-2">It's quiet here</h3>
+                <p id="empty-state-desc" class="text-sm text-textMuted font-medium">Add an item to get started.</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal -->
+    <div id="modal" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity" onclick="window.closeModal()"></div>
+        <div class="absolute inset-0 flex items-center justify-center p-4">
+            <div class="bg-card rounded-2xl shadow-2xl w-full max-w-md transform scale-100 transition-all p-8 relative border border-borderMain">
+                <button onclick="window.closeModal()" class="absolute top-5 right-5 text-textMuted hover:text-textMain bg-surface p-2 rounded-full transition-colors border border-borderMain">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+                <h3 id="modal-title" class="text-2xl font-bold text-textMain mb-6 font-main tracking-tight">Create New</h3>
+                <form id="modal-form" onsubmit="window.handleFormSubmit(event)">
+                    <div class="space-y-5">
+                        <div>
+                            <label id="label-title" class="block text-xs font-bold uppercase tracking-wider text-textMuted mb-2">Title</label>
+                            <input type="text" id="input-title" class="w-full px-4 py-3 bg-surface border border-borderMain rounded-xl focus:ring-2 focus:ring-accent focus:border-accent text-textMain outline-none transition-all placeholder-textMuted font-medium" placeholder="Title..." required>
+                        </div>
+                        <div id="item-fields" class="space-y-5">
+                            <div>
+                                <label class="block text-xs font-bold uppercase tracking-wider text-textMuted mb-2">Link <span class="font-normal opacity-70">(Optional)</span></label>
+                                <input type="url" id="input-link" class="w-full px-4 py-3 bg-surface border border-borderMain rounded-xl focus:ring-2 focus:ring-accent focus:border-accent text-textMain outline-none transition-all placeholder-textMuted font-medium" placeholder="https://...">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold uppercase tracking-wider text-textMuted mb-2">Notes <span class="font-normal opacity-70">(Optional)</span></label>
+                                <textarea id="input-desc" rows="3" class="w-full px-4 py-3 bg-surface border border-borderMain rounded-xl focus:ring-2 focus:ring-accent focus:border-accent text-textMain outline-none transition-all placeholder-textMuted font-medium resize-none"></textarea>
+                            </div>
+                            <div class="flex items-center gap-3 bg-surface p-4 rounded-xl border border-borderMain transition-colors">
+                                <input type="checkbox" id="input-sensitive" class="w-5 h-5 rounded text-accent focus:ring-accent border-borderMain cursor-pointer">
+                                <label for="input-sensitive" id="label-sensitive" class="text-sm font-semibold text-textMain cursor-pointer select-none">Mask content (for passwords/pins)</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-8 flex justify-end gap-3">
+                        <button type="button" onclick="window.closeModal()" class="px-5 py-2.5 text-textMuted hover:text-textMain hover:bg-black/5 rounded-xl font-bold transition-colors">Cancel</button>
+                        <button type="submit" class="primary-btn px-6 py-2.5 rounded-xl font-bold shadow-md">Save</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-6 right-6 bg-sidebar text-white px-5 py-4 rounded-xl shadow-2xl transform translate-y-32 opacity-0 transition-all duration-500 cubic-bezier(0.4, 0, 0.2, 1) z-50 flex items-center gap-3 border border-borderMain">
+        <div class="bg-accent/20 p-1.5 rounded-full text-accent">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
+        </div>
+        <span id="toast-message" class="font-bold text-sm tracking-wide">Action successful</span>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot, setDoc, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- Application State ---
+        let state = {
+            activeSectionId: 'default',
+            sections: [
+                { id: 'default', title: 'My List', icon: 'folder', items: [] }
+            ]
+        };
+
+        const LOCAL_STORAGE_KEY = 'life_organizer_data_v1';
+        let isCloudEnabled = false;
+        
+        let currentModalType = 'item'; 
+        let editingItemId = null;
+        let db = null;
+        let currentUser = null;
+        let unsubscribeSnapshot = null;
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+        // --- DOM Elements ---
+        const els = {
+            sidebar: document.getElementById('sidebar'),
+            sidebarOverlay: document.getElementById('sidebar-overlay'),
+            sidebarList: document.getElementById('sidebar-list'),
+            activeSectionTitle: document.getElementById('active-section-title'),
+            itemCount: document.getElementById('item-count'),
+            itemsGrid: document.getElementById('items-grid'),
+            emptyState: document.getElementById('empty-state'),
+            deleteSectionBtn: document.getElementById('delete-section-btn'),
+            headerSubtitle: document.getElementById('header-subtitle'),
+            modal: document.getElementById('modal'),
+            modalTitle: document.getElementById('modal-title'),
+            itemFields: document.getElementById('item-fields'),
+            inputTitle: document.getElementById('input-title'),
+            inputLink: document.getElementById('input-link'),
+            inputDesc: document.getElementById('input-desc'),
+            inputSensitive: document.getElementById('input-sensitive'),
+            loadingOverlay: document.getElementById('loading-overlay'),
+            statusDot: document.getElementById('status-dot'),
+            statusText: document.getElementById('status-text')
+        };
+
+        // --- Theme Switcher Logic ---
+        window.setTheme = function(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('organizer_theme', theme);
+            
+            // Update active state on buttons
+            ['light', 'dark', 'gaming'].forEach(t => {
+                const btn = document.getElementById(`btn-theme-${t}`);
+                if (t === theme) {
+                    btn.className = "p-2 rounded-lg transition-all text-xs flex-1 flex justify-center items-center gap-1 font-bold text-accent bg-accent/10 border border-accent/30 shadow-sm";
+                } else {
+                    btn.className = "p-2 rounded-lg transition-all text-xs flex-1 flex justify-center items-center gap-1 font-medium text-slate-400 hover:text-white hover:bg-white/5 border border-transparent";
+                }
+            });
+
+            // Update Text copy based on vibe
+            const isGaming = theme === 'gaming';
+            document.getElementById('app-logo-text').innerText = isGaming ? 'SAVE POINT' : 'Organizer';
+            document.getElementById('app-logo-text').className = isGaming ? "text-3xl font-bold tracking-widest text-white font-display drop-shadow-[0_0_8px_rgba(244,114,182,0.8)]" : "text-xl font-bold tracking-tight text-white font-main";
+            
+            document.getElementById('sidebar-subtitle').innerText = isGaming ? 'Inventories' : 'My Collections';
+            document.getElementById('btn-new-collection-text').innerText = isGaming ? 'NEW INVENTORY' : 'Create Collection';
+            document.getElementById('btn-add-item-text').innerText = isGaming ? 'ADD LOOT' : 'Add Item';
+            document.getElementById('label-sensitive').innerText = isGaming ? 'Stealth Mode (Mask Content)' : 'Mask content (for passwords/pins)';
+
+            if(currentModalType === 'section') {
+                els.inputTitle.placeholder = isGaming ? "e.g., Epic Quests, Potions..." : "e.g., Book List, Groceries...";
+            }
+
+            renderAll();
+        }
+
+        // --- Initialization Logic ---
+        async function initApp() {
+            // Apply Theme UI correctly on load
+            window.setTheme(localStorage.getItem('organizer_theme') || 'light');
+
+            try {
+                if (typeof __firebase_config !== 'undefined') {
+                    await initFirebase(JSON.parse(__firebase_config));
+                } else {
+                    initLocalStorageMode();
+                }
+            } catch (error) {
+                console.error("Init failed:", error);
+                initLocalStorageMode();
+            }
+        }
+
+        function initLocalStorageMode() {
+            isCloudEnabled = false;
+            els.statusDot.className = "h-2 w-2 rounded-full bg-yellow-400 shadow-[0_0_8px_rgba(250,204,21,0.5)]";
+            els.statusText.innerText = "LOCAL SAVE";
+            els.statusDot.parentElement.title = "Data is saved to this browser only";
+
+            const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    if (parsed.sections) state.sections = parsed.sections;
+                } catch (e) { console.error("Corrupt local data", e); }
+            }
+            finishLoading();
+        }
+
+        async function initFirebase(config) {
+            const app = initializeApp(config);
+            const auth = getAuth(app);
+            db = getFirestore(app);
+
+            const initAuth = async () => {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            };
+
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    currentUser = user;
+                    isCloudEnabled = true;
+                    els.statusDot.className = "h-2 w-2 rounded-full bg-green-400 animate-pulse shadow-[0_0_8px_rgba(74,222,128,0.5)]";
+                    els.statusText.innerText = "CLOUD SYNC";
+                    setupDataListener(user.uid);
+                }
+            });
+
+            await initAuth();
+        }
+
+        function setupDataListener(uid) {
+            const docRef = doc(db, 'artifacts', appId, 'users', uid, 'organizer_data', 'content');
+            
+            unsubscribeSnapshot = onSnapshot(docRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    if (data.sections && Array.isArray(data.sections) && data.sections.length > 0) {
+                        state.sections = data.sections;
+                        if (!state.sections.find(s => s.id === state.activeSectionId)) {
+                            state.activeSectionId = state.sections[0].id;
+                        }
+                    }
+                }
+                finishLoading();
+            }, (error) => {
+                els.statusDot.className = "h-2 w-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]";
+                els.statusText.innerText = "SYNC ERROR";
+                finishLoading();
+            });
+        }
+
+        function finishLoading() {
+            els.loadingOverlay.style.opacity = '0';
+            setTimeout(() => els.loadingOverlay.style.display = 'none', 500);
+            renderAll();
+        }
+
+        async function saveData() {
+            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({ sections: state.sections }));
+            if (isCloudEnabled && db && currentUser) {
+                const docRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'organizer_data', 'content');
+                try {
+                    await setDoc(docRef, { sections: state.sections });
+                } catch (e) {
+                    els.statusDot.className = "h-2 w-2 rounded-full bg-red-500";
+                }
+            }
+        }
+
+        function getActiveSection() {
+            return state.sections.find(s => s.id === state.activeSectionId) || state.sections[0];
+        }
+
+        function switchSection(id) {
+            state.activeSectionId = id;
+            if(window.innerWidth < 768) window.toggleSidebar();
+            renderAll();
+        }
+
+        function renderAll() {
+            renderSidebar();
+            renderMain();
+        }
+
+        function renderSidebar() {
+            els.sidebarList.innerHTML = '';
+            const isGaming = document.documentElement.getAttribute('data-theme') === 'gaming';
+            
+            state.sections.forEach(section => {
+                const isActive = section.id === state.activeSectionId;
+                const li = document.createElement('div');
+                
+                const baseClasses = "flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer transition-all duration-200 text-sm font-semibold group mb-1 border border-transparent";
+                
+                let activeClasses, inactiveClasses;
+                if(isGaming) {
+                    activeClasses = "bg-accent/20 border-accent text-white shadow-[0_0_15px_rgba(236,72,153,0.15)]";
+                    inactiveClasses = "text-indigo-300 hover:border-accent/30 hover:bg-black/20";
+                } else {
+                    activeClasses = "bg-accent text-white shadow-md";
+                    inactiveClasses = "text-slate-400 hover:bg-white/5 hover:text-white";
+                }
+                
+                li.className = `${baseClasses} ${isActive ? activeClasses : inactiveClasses}`;
+                li.onclick = () => switchSection(section.id);
+                
+                let iconSvg = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />';
+                if(section.title.toLowerCase().includes('watch')) iconSvg = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />';
+                if(section.title.toLowerCase().includes('note')) iconSvg = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />';
+
+                const iconColor = isActive ? 'text-white' : (isGaming ? 'text-indigo-400 group-hover:text-accent' : 'text-slate-400 group-hover:text-white');
+                const badgeStyle = isActive ? (isGaming ? 'bg-accent text-white' : 'bg-white/20 text-white') : (isGaming ? 'bg-indigo-900/50 text-indigo-300' : 'bg-black/30 text-slate-400');
+
+                li.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transition-colors ${iconColor}" fill="none" viewBox="0 0 24 24" stroke="currentColor">${iconSvg}</svg>
+                    <span class="truncate tracking-wide ${isGaming ? 'text-[15px]' : ''}">${section.title}</span>
+                    <span class="ml-auto text-[10px] font-bold px-2 py-0.5 rounded-full ${badgeStyle}">${section.items.length}</span>
+                `;
+                els.sidebarList.appendChild(li);
+            });
+        }
+
+        function renderMain() {
+            const section = getActiveSection();
+            if (!section) return;
+            const isGaming = document.documentElement.getAttribute('data-theme') === 'gaming';
+
+            els.activeSectionTitle.innerText = section.title;
+            els.activeSectionTitle.className = isGaming ? "text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-purple-400 font-display tracking-widest drop-shadow-sm" : "text-2xl font-bold text-textMain tracking-tight";
+            
+            els.headerSubtitle.innerText = isGaming ? `MANAGE YOUR ${section.items.length} LOOT` : `Manage your ${section.items.length} item${section.items.length !== 1 ? 's' : ''}`;
+            els.itemCount.innerText = `${section.items.length} ${isGaming ? 'LOOT' : 'items'}`;
+            
+            document.getElementById('empty-state-title').innerText = isGaming ? "NO LOOT FOUND" : "It's quiet here";
+            document.getElementById('empty-state-title').className = isGaming ? "text-2xl font-black text-textMain mb-2 font-display tracking-widest" : "text-xl font-bold text-textMain mb-2";
+            document.getElementById('empty-state-desc').innerText = isGaming ? "Equip an item to get started!" : "Add an item to get started.";
+
+            els.deleteSectionBtn.style.display = state.sections.length <= 1 ? 'none' : 'block';
+            els.itemsGrid.innerHTML = '';
+
+            if (section.items.length === 0) {
+                els.itemsGrid.classList.add('hidden');
+                els.emptyState.classList.remove('hidden');
+            } else {
+                els.itemsGrid.classList.remove('hidden');
+                els.emptyState.classList.add('hidden');
+
+                section.items.forEach(item => {
+                    const card = document.createElement('div');
+                    card.className = `p-6 rounded-2xl item-card flex flex-col gap-4 relative fade-in h-full group overflow-hidden ${isGaming ? 'rounded-3xl' : ''}`;
+                    
+                    const accentHtml = isGaming ? `<div class="absolute -top-6 -right-6 w-16 h-16 bg-gradient-to-br from-pink-500/20 to-purple-500/20 rounded-full blur-xl group-hover:from-pink-500/40 group-hover:to-purple-500/40 transition-colors pointer-events-none"></div>` : '';
+
+                    let linkHtml = item.link ? `
+                        <a href="${item.link}" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1 bg-accent/10 text-accent hover:bg-accent/20 rounded-full text-xs font-bold transition-colors mt-2 max-w-full truncate relative z-10 ${isGaming ? 'uppercase tracking-wider border border-accent/30' : ''}">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                            <span class="truncate">${isGaming ? 'LAUNCH LINK' : 'Open Link'}</span>
+                        </a>` : '';
+
+                    const isSensitive = item.isSensitive || false;
+                    const blurClass = isSensitive ? `blur-md hover:blur-none transition-all duration-300 cursor-pointer select-none ${isGaming ? 'bg-surface' : 'bg-surface'}` : '';
+                    const toggleAttr = isSensitive ? 'onclick="if(this.classList.contains(\'blur-md\')){this.classList.remove(\'blur-md\', \'select-none\')}else{this.classList.add(\'blur-md\', \'select-none\')}"' : '';
+                    const titleLock = isSensitive ? `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block ml-2 mb-1 ${isGaming ? 'text-accent drop-shadow-[0_0_5px_rgba(236,72,153,0.8)]' : 'text-textMuted'}" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>` : '';
+
+                    const notesHtml = item.note ? `<div class="text-sm leading-relaxed whitespace-pre-wrap break-words flex-grow relative z-10 font-medium ${blurClass} ${isGaming ? 'text-indigo-200 p-3 rounded-xl bg-black/20 border border-indigo-500/10' : 'text-textMuted'}" ${toggleAttr} title="${isSensitive ? 'Click to reveal' : ''}">${item.note}</div>` : '<div class="flex-grow relative z-10"></div>';
+
+                    card.innerHTML = `
+                        ${accentHtml}
+                        <div class="flex flex-col gap-1 relative z-10">
+                            <div class="flex justify-between items-start">
+                                <h3 class="${isGaming ? 'font-display text-2xl tracking-widest' : 'font-bold text-lg'} text-textMain leading-snug break-words pr-14">${item.title} ${titleLock}</h3>
+                                <div class="absolute top-0 right-0 flex gap-1 z-20">
+                                    <button onclick="window.editItem(${item.id})" class="action-btn text-textMuted hover:text-accent bg-surface p-1.5 rounded-lg border border-borderMain hover:shadow-sm transition-all" title="Edit">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                                    </button>
+                                    <button onclick="window.deleteItem(${item.id})" class="action-btn text-textMuted hover:text-danger bg-surface p-1.5 rounded-lg border border-borderMain hover:shadow-sm transition-all" title="Delete">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                                    </button>
+                                </div>
+                            </div>
+                            ${linkHtml}
+                        </div>
+                        <div class="w-full h-px ${isGaming ? 'bg-indigo-500/20 my-2' : 'bg-borderMain my-1'} relative z-10"></div>
+                        ${notesHtml}
+                        <div class="flex items-center justify-between pt-2 mt-auto relative z-10">
+                            <div class="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded ${isGaming ? 'text-accent bg-accent/10 border border-accent/20' : 'text-textMuted bg-surface'}">${item.date}</div>
+                        </div>
+                    `;
+                    els.itemsGrid.appendChild(card);
+                });
+            }
+        }
+
+        window.handleFormSubmit = function(e) {
+            e.preventDefault();
+            const title = els.inputTitle.value.trim();
+            if (!title) return;
+
+            if (currentModalType === 'section') {
+                const newSection = { id: 'sec-' + Date.now(), title: title, icon: 'folder', items: [] };
+                state.sections.push(newSection);
+                switchSection(newSection.id);
+                showToast('Collection created');
+            } else {
+                const activeSection = getActiveSection();
+                const isSensitive = els.inputSensitive.checked;
+
+                if (editingItemId) {
+                    const item = activeSection.items.find(i => i.id === editingItemId);
+                    if (item) {
+                        item.title = title; item.link = els.inputLink.value.trim();
+                        item.note = els.inputDesc.value.trim(); item.isSensitive = isSensitive;
+                    }
+                    showToast('Changes saved');
+                } else {
+                    const newItem = {
+                        id: Date.now(), title: title, link: els.inputLink.value.trim(),
+                        note: els.inputDesc.value.trim(), date: new Date().toLocaleDateString(), isSensitive: isSensitive
+                    };
+                    activeSection.items.unshift(newItem); 
+                    showToast('Item saved');
+                }
+                renderAll();
+            }
+            saveData();
+            window.closeModal();
+        };
+
+        window.deleteItem = function(itemId) {
+            if(confirm("Delete this item?")) {
+                const section = getActiveSection();
+                section.items = section.items.filter(i => i.id !== itemId);
+                renderAll(); saveData(); showToast('Item deleted');
+            }
+        };
+
+        window.editItem = function(itemId) {
+            const item = getActiveSection().items.find(i => i.id === itemId);
+            if(!item) return;
+            
+            editingItemId = itemId;
+            currentModalType = 'item';
+            
+            els.inputTitle.value = item.title;
+            els.inputLink.value = item.link || '';
+            els.inputDesc.value = item.note || '';
+            els.inputSensitive.checked = item.isSensitive || false;
+            
+            const isGaming = document.documentElement.getAttribute('data-theme') === 'gaming';
+            els.modalTitle.innerText = isGaming ? 'EDIT LOOT' : 'Edit Item';
+            els.modalTitle.className = isGaming ? "text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-purple-400 mb-6 font-display tracking-widest" : "text-2xl font-bold text-textMain mb-6 font-main tracking-tight";
+
+            els.itemFields.classList.remove('hidden');
+            els.inputTitle.placeholder = isGaming ? "Loot Name..." : "Item Title";
+            
+            els.modal.classList.remove('hidden');
+            els.inputTitle.focus();
+        };
+
+        window.deleteCurrentSection = function() {
+            if(state.sections.length <= 1) return;
+            if(confirm(`Delete "${getActiveSection().title}"?`)) {
+                state.sections = state.sections.filter(s => s.id !== state.activeSectionId);
+                switchSection(state.sections[0].id);
+                saveData(); showToast('Section deleted');
+            }
+        };
+
+        window.toggleSidebar = function() {
+            els.sidebar.classList.toggle('-translate-x-full');
+            els.sidebarOverlay.classList.toggle('hidden');
+        };
+
+        window.openModal = function(type) {
+            editingItemId = null;
+            currentModalType = type;
+            const isGaming = document.documentElement.getAttribute('data-theme') === 'gaming';
+            
+            els.modalTitle.innerText = type === 'section' ? (isGaming ? 'NEW INVENTORY' : 'New Collection') : (isGaming ? 'ADD NEW LOOT' : 'New Item');
+            els.modalTitle.className = isGaming ? "text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-purple-400 mb-6 font-display tracking-widest" : "text-2xl font-bold text-textMain mb-6 font-main tracking-tight";
+            
+            els.inputTitle.value = ''; els.inputLink.value = ''; els.inputDesc.value = '';
+            if(els.inputSensitive) els.inputSensitive.checked = false;
+
+            if (type === 'section') {
+                els.itemFields.classList.add('hidden');
+                els.inputTitle.placeholder = isGaming ? "e.g., Epic Quests, Potions..." : "e.g., Book List, Groceries...";
+            } else {
+                els.itemFields.classList.remove('hidden');
+                els.inputTitle.placeholder = isGaming ? "Loot Name..." : "Item Title";
+            }
+            els.modal.classList.remove('hidden');
+            els.inputTitle.focus();
+        };
+
+        window.closeModal = function() {
+            els.modal.classList.add('hidden');
+            editingItemId = null;
+        };
+
+        function showToast(msg) {
+            document.getElementById('toast-message').innerText = msg;
+            const toast = document.getElementById('toast');
+            toast.classList.remove('translate-y-32', 'opacity-0');
+            setTimeout(() => toast.classList.add('translate-y-32', 'opacity-0'), 3000);
+        }
+
+        document.addEventListener('keydown', function(event) {
+            if(event.key === "Escape" && !els.modal.classList.contains('hidden')) window.closeModal();
+        });
+
+        initApp();
+    </script>
+</body>
+</html>
