@@ -93,6 +93,10 @@
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 10px; }
 
+        /* Hide scrollbar for swipe galleries */
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
         /* Shared Components */
         .glass-header {
             background-color: var(--header-bg);
@@ -159,6 +163,12 @@
         @media (min-width: 768px) {
             .search-expand { width: 200px; }
             .search-expand:focus { width: 300px; }
+        }
+
+        /* Checkbox styling */
+        .goal-checkbox:checked + label {
+            text-decoration: line-through;
+            opacity: 0.5;
         }
     </style>
     <script>
@@ -262,16 +272,15 @@
                 </div>
             </div>
             
-            <div class="flex items-center gap-2 sm:gap-4 flex-1 justify-end">
+            <div class="flex items-center gap-2 sm:gap-3 flex-1 justify-end">
                 <!-- Search Bar -->
-                <div class="relative flex items-center group">
+                <div class="relative flex items-center group hidden sm:flex">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 absolute left-3.5 text-textMuted group-focus-within:text-accent transition-colors z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                     <input type="text" id="search-input" oninput="window.handleSearch(this.value)" placeholder="Search..." class="search-expand pl-10 pr-4 py-2 bg-card border border-borderMain hover:border-accent/50 rounded-full text-sm focus:ring-2 focus:ring-accent/20 focus:border-accent text-textMain outline-none transition-all placeholder-textMuted font-medium shadow-sm">
                 </div>
                 
-                <span id="item-count" class="hidden lg:inline-flex bg-surface text-textMuted text-xs px-3 py-1.5 rounded-full font-bold border border-borderMain shadow-inner whitespace-nowrap">0 items</span>
                 <div class="h-6 w-[1px] bg-borderMain mx-1 hidden sm:block"></div>
                 
                 <button onclick="window.deleteCurrentSection()" id="delete-section-btn" class="text-textMuted hover:text-danger hover:bg-danger/10 p-2.5 rounded-xl transition-all border border-transparent hover:border-danger/20 flex-shrink-0 hidden sm:block" title="Delete Collection">
@@ -279,6 +288,14 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                     </svg>
                 </button>
+
+                <!-- Daily Tracker Button -->
+                <button onclick="window.toggleGoalsDrawer()" class="text-textMuted hover:text-accent p-2 sm:p-2.5 bg-card rounded-xl border border-borderMain shadow-sm transition-all active:scale-95 flex items-center justify-center relative" title="Daily Tracker & Goals">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                </button>
+
                 <button onclick="window.openModal('item')" class="primary-btn px-4 sm:px-5 py-2.5 rounded-full sm:rounded-xl font-bold shadow-md flex items-center gap-2 tracking-wide transform active:scale-95 flex-shrink-0">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -294,6 +311,12 @@
             <div class="mb-6 sm:hidden px-2">
                 <h2 id="mobile-section-title" class="text-3xl font-bold text-textMain tracking-tight">Loading...</h2>
                 <p class="text-sm text-textMuted font-medium mt-1" id="mobile-header-subtitle">Manage your items</p>
+                <div class="mt-4 relative flex items-center group">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 absolute left-3.5 text-textMuted group-focus-within:text-accent transition-colors z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <input type="text" id="search-input-mobile" oninput="window.handleSearch(this.value)" placeholder="Search..." class="w-full pl-10 pr-4 py-2 bg-card border border-borderMain hover:border-accent/50 rounded-full text-sm focus:ring-2 focus:ring-accent/20 focus:border-accent text-textMain outline-none transition-all placeholder-textMuted font-medium shadow-sm">
+                </div>
             </div>
 
             <div id="items-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6"></div>
@@ -310,6 +333,78 @@
             </div>
         </div>
     </main>
+
+    <!-- Daily Tracker Drawer -->
+    <div id="goals-overlay" onclick="window.toggleGoalsDrawer()" class="fixed inset-0 bg-black/60 z-[85] hidden backdrop-blur-sm transition-opacity"></div>
+    
+    <div id="goals-drawer" class="fixed inset-y-0 right-0 w-full sm:w-[420px] bg-card border-l border-borderMain shadow-2xl z-[90] transform translate-x-full transition-transform duration-300 flex flex-col">
+        <div class="p-6 border-b border-borderMain flex justify-between items-center bg-surface">
+            <h2 class="text-xl font-black text-textMain flex items-center gap-2 font-display tracking-tight">
+                <span class="text-2xl">🎯</span> Daily Tracker
+            </h2>
+            <button onclick="window.toggleGoalsDrawer()" class="text-textMuted hover:text-danger p-2 rounded-full hover:bg-danger/10 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-6 space-y-8 bg-surface">
+            
+            <!-- Date & Time Panel -->
+            <div class="flex justify-between items-center bg-card p-4 rounded-2xl border border-borderMain shadow-sm">
+                <div class="text-center flex-1">
+                    <p class="text-[10px] text-textMuted font-bold uppercase tracking-wider mb-1">Current Time</p>
+                    <p id="live-time" class="text-xl font-display font-black text-textMain tracking-widest">--:--:--</p>
+                </div>
+                <div class="w-px h-10 bg-borderMain mx-2"></div>
+                <div class="text-center flex-1">
+                    <p class="text-[10px] text-textMuted font-bold uppercase tracking-wider mb-1">Date</p>
+                    <p id="live-date" class="text-xs font-bold text-textMain uppercase">---</p>
+                </div>
+            </div>
+
+            <!-- Streak Banner -->
+            <div class="bg-gradient-to-r from-indigo-500 to-purple-500 rounded-2xl p-5 text-center shadow-lg relative overflow-hidden group">
+                <div class="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <p class="text-white font-black text-2xl tracking-wide flex items-center justify-center gap-2">
+                    <span class="text-3xl animate-bounce">🔥</span>
+                    <span id="streak-counter">0 Days Streak</span>
+                </p>
+            </div>
+
+            <!-- Daily Goals Checklist -->
+            <div>
+                <h3 class="text-sm font-bold text-textMain mb-3 uppercase tracking-wider flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
+                    Daily Goals
+                </h3>
+                <form onsubmit="window.handleAddGoal(event)" class="flex gap-2 mb-5">
+                    <input type="text" id="goal-input" placeholder="Set a new daily goal..." class="flex-1 bg-card border border-borderMain rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-accent outline-none text-textMain shadow-inner font-medium" required>
+                    <button type="submit" class="bg-accent text-white px-5 py-3 rounded-xl font-bold text-sm shadow-md hover:opacity-90 transition-all transform active:scale-95">Add Goal</button>
+                </form>
+                
+                <div id="active-goals-list" class="space-y-2.5">
+                    <!-- Active Goals will be injected here -->
+                </div>
+                
+                <div id="goals-empty" class="text-center py-6 hidden">
+                    <p class="text-sm text-textMuted font-bold">No active goals set yet.</p>
+                </div>
+
+                <!-- Archive Section -->
+                <div class="mt-6 border-t border-borderMain pt-4">
+                    <button onclick="window.toggleArchive()" id="toggle-archive-btn" class="w-full flex items-center justify-between text-sm font-bold text-textMuted hover:text-textMain transition-colors p-2 rounded-xl hover:bg-black/5 -ml-2 pr-2">
+                        <span id="archive-count-text">Archived Goals (0)</span>
+                        <svg id="archive-chevron" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 transform transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                    </button>
+                    <div id="archived-goals-container" class="hidden mt-3">
+                        <div id="archived-goals-list" class="space-y-2.5">
+                            <!-- Archived goals will be injected here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Modal -->
     <div id="modal" class="fixed inset-0 z-50 hidden">
@@ -331,22 +426,22 @@
                             <div id="item-fields" class="space-y-5">
                                 <div>
                                     <label class="block text-xs font-bold uppercase tracking-wider text-textMuted mb-2 ml-1">Link <span class="font-normal opacity-70 text-[10px] normal-case">(Optional)</span></label>
-                                    <input type="url" id="input-link" class="w-full px-4 py-3.5 bg-surface border border-borderMain rounded-2xl focus:ring-2 focus:ring-accent/50 focus:border-accent text-textMain outline-none transition-all placeholder-textMuted font-medium shadow-inner" placeholder="https://...">
+                                    <input type="text" id="input-link" class="w-full px-4 py-3.5 bg-surface border border-borderMain rounded-2xl focus:ring-2 focus:ring-accent/50 focus:border-accent text-textMain outline-none transition-all placeholder-textMuted font-medium shadow-inner" placeholder="https://...">
                                 </div>
                                 <div>
-                                    <label class="block text-xs font-bold uppercase tracking-wider text-textMuted mb-2 ml-1">Media <span class="font-normal opacity-70 text-[10px] normal-case">(Image, Video, or Embed)</span></label>
+                                    <label class="block text-xs font-bold uppercase tracking-wider text-textMuted mb-2 ml-1">Media <span class="font-normal opacity-70 text-[10px] normal-case">(Images, PDFs, or URL)</span></label>
                                     <div class="flex gap-2 items-center">
-                                        <input type="url" id="input-image" class="flex-1 px-4 py-3.5 bg-surface border border-borderMain rounded-2xl focus:ring-2 focus:ring-accent/50 focus:border-accent text-textMain outline-none transition-all placeholder-textMuted font-medium shadow-inner" placeholder="Paste YouTube, Spotify, Apple Music, FB...">
-                                        <label for="input-file" class="cursor-pointer bg-surface border border-borderMain hover:border-accent/50 hover:bg-accent/5 p-3.5 rounded-2xl transition-all text-textMuted hover:text-accent flex-shrink-0 shadow-sm group" title="Upload Local Image">
+                                        <div class="flex-1 flex bg-surface border border-borderMain rounded-2xl overflow-hidden shadow-inner focus-within:ring-2 focus-within:ring-accent/50 focus-within:border-accent">
+                                            <input type="text" id="input-image" class="w-full px-4 py-3.5 bg-transparent text-textMain outline-none placeholder-textMuted font-medium" placeholder="Add YouTube, Spotify URL...">
+                                            <button type="button" onclick="window.addMediaLink()" class="px-4 text-accent hover:bg-accent/10 font-bold border-l border-borderMain transition-colors">Add</button>
+                                        </div>
+                                        <label for="input-file" class="cursor-pointer bg-surface border border-borderMain hover:border-accent/50 hover:bg-accent/5 p-3.5 rounded-2xl transition-all text-textMuted hover:text-accent flex-shrink-0 shadow-sm group" title="Upload Local Files">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
                                         </label>
-                                        <input type="file" id="input-file" accept="image/*" class="hidden" onchange="window.handleFileUpload(event)">
+                                        <input type="file" id="input-file" accept="image/*,application/pdf" multiple class="hidden" onchange="window.handleFileUpload(event)">
                                     </div>
-                                    <div id="image-preview-container" class="hidden mt-3 relative w-full h-40 rounded-2xl overflow-hidden border border-borderMain shadow-inner bg-black/5 flex items-center justify-center group">
-                                        <img id="image-preview" class="max-w-full max-h-full object-contain">
-                                        <button type="button" onclick="window.clearImage()" class="absolute top-3 right-3 bg-black/70 text-white p-2 rounded-xl hover:bg-danger transition-colors backdrop-blur-md opacity-0 group-hover:opacity-100">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                        </button>
+                                    <div id="media-preview-container" class="hidden mt-3 w-full flex gap-3 overflow-x-auto pb-2 hide-scrollbar">
+                                        <!-- Previews injected here -->
                                     </div>
                                 </div>
                                 <div>
@@ -384,7 +479,7 @@
     </div>
 
     <!-- Notification Toast -->
-    <div id="toast" class="fixed bottom-6 right-6 sm:bottom-8 sm:right-8 bg-sidebar text-white px-5 py-4 rounded-2xl shadow-2xl transform translate-y-32 opacity-0 transition-all duration-500 cubic-bezier(0.16, 1, 0.3, 1) z-[70] flex items-center gap-3 border border-borderMain">
+    <div id="toast" class="fixed bottom-6 right-6 sm:bottom-8 sm:right-8 bg-sidebar text-white px-5 py-4 rounded-2xl shadow-2xl transform translate-y-32 opacity-0 transition-all duration-500 cubic-bezier(0.16, 1, 0.3, 1) z-[100] flex items-center gap-3 border border-borderMain">
         <div class="bg-accent/20 p-1.5 rounded-full text-accent">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
         </div>
@@ -392,7 +487,7 @@
     </div>
 
     <!-- Custom Confirm Modal -->
-    <div id="confirm-modal" class="fixed inset-0 z-[60] hidden">
+    <div id="confirm-modal" class="fixed inset-0 z-[110] hidden">
         <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onclick="window.closeConfirmModal()"></div>
         <div class="absolute inset-0 flex items-center justify-center p-4">
             <div class="bg-card rounded-3xl shadow-2xl w-full max-w-sm transform scale-100 transition-all p-8 relative border border-borderMain text-center">
@@ -430,7 +525,8 @@
             searchQuery: '',
             sections: [
                 { id: 'default', title: 'My Space', icon: 'folder', items: [] }
-            ]
+            ],
+            tracker: { streak: 0, lastDate: '', goals: [] }
         };
 
         const LOCAL_STORAGE_KEY = 'pocket_peace_data_v1';
@@ -443,9 +539,9 @@
         let unsubscribeSnapshot = null;
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
-        // --- Drag & Drop State ---
+        // --- Multiple Media State ---
         let draggedItemId = null;
-        let currentBase64Image = ''; 
+        let currentMediaList = [];
 
         // --- DOM Elements ---
         const els = {
@@ -456,6 +552,7 @@
             mobileSectionTitle: document.getElementById('mobile-section-title'),
             itemCount: document.getElementById('item-count'),
             searchInput: document.getElementById('search-input'),
+            searchInputMobile: document.getElementById('search-input-mobile'),
             itemsGrid: document.getElementById('items-grid'),
             emptyState: document.getElementById('empty-state'),
             deleteSectionBtn: document.getElementById('delete-section-btn'),
@@ -468,15 +565,161 @@
             inputLink: document.getElementById('input-link'),
             inputImage: document.getElementById('input-image'),
             inputFile: document.getElementById('input-file'),
-            imagePreviewContainer: document.getElementById('image-preview-container'),
-            imagePreview: document.getElementById('image-preview'),
+            mediaPreviewContainer: document.getElementById('media-preview-container'),
             inputDesc: document.getElementById('input-desc'),
             inputSensitive: document.getElementById('input-sensitive'),
             inputLoop: document.getElementById('input-loop'),
             loadingOverlay: document.getElementById('loading-overlay'),
             statusDot: document.getElementById('status-dot'),
-            statusText: document.getElementById('status-text')
+            statusText: document.getElementById('status-text'),
+            goalsDrawer: document.getElementById('goals-drawer'),
+            goalsOverlay: document.getElementById('goals-overlay'),
+            activeGoalsList: document.getElementById('active-goals-list'),
+            archivedGoalsList: document.getElementById('archived-goals-list'),
+            archivedGoalsContainer: document.getElementById('archived-goals-container'),
+            archiveChevron: document.getElementById('archive-chevron'),
+            goalsEmpty: document.getElementById('goals-empty'),
+            streakCounter: document.getElementById('streak-counter')
         };
+
+        // --- Live Clock Logic ---
+        setInterval(() => {
+            const now = new Date();
+            const timeEl = document.getElementById('live-time');
+            const dateEl = document.getElementById('live-date');
+            if(timeEl) timeEl.innerText = now.toLocaleTimeString('en-US', { hour12: false });
+            if(dateEl) dateEl.innerText = now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+        }, 1000);
+
+        // --- Daily Tracker / Streak Logic ---
+        function initializeTracker() {
+            if (!state.tracker) state.tracker = { streak: 0, lastDate: '', goals: [] };
+            
+            const today = new Date().toDateString();
+            const lastDate = state.tracker.lastDate;
+
+            if (lastDate !== today) {
+                if (lastDate) {
+                    const yesterday = new Date();
+                    yesterday.setDate(yesterday.getDate() - 1);
+                    if (lastDate === yesterday.toDateString()) {
+                        // Logged in yesterday, increment streak
+                        state.tracker.streak += 1;
+                    } else {
+                        // Missed a day, reset
+                        state.tracker.streak = 1;
+                    }
+                } else {
+                    // First time
+                    state.tracker.streak = 1;
+                }
+                state.tracker.lastDate = today;
+                saveData(); // Save the new streak
+            }
+            renderGoals();
+        }
+
+        window.toggleGoalsDrawer = function() {
+            if (els.goalsDrawer) els.goalsDrawer.classList.toggle('translate-x-full');
+            if (els.goalsOverlay) els.goalsOverlay.classList.toggle('hidden');
+        };
+
+        window.handleAddGoal = function(e) {
+            e.preventDefault();
+            const input = document.getElementById('goal-input');
+            const text = input.value.trim();
+            if (!text) return;
+
+            const newGoal = { id: Date.now(), text: text, completed: false };
+            state.tracker.goals.push(newGoal);
+            input.value = '';
+            
+            saveData();
+            renderGoals();
+        };
+
+        window.toggleGoal = function(id) {
+            const goal = state.tracker.goals.find(g => g.id === id);
+            if (goal) {
+                goal.completed = !goal.completed;
+                saveData();
+                renderGoals();
+            }
+        };
+
+        window.deleteGoal = function(id) {
+            state.tracker.goals = state.tracker.goals.filter(g => g.id !== id);
+            saveData();
+            renderGoals();
+        };
+
+        let showArchived = false;
+
+        window.toggleArchive = function() {
+            showArchived = !showArchived;
+            renderGoals();
+        };
+
+        function renderGoals() {
+            if (els.streakCounter) {
+                els.streakCounter.innerText = `${state.tracker.streak} Day${state.tracker.streak !== 1 ? 's' : ''} Streak`;
+            }
+
+            if (!els.activeGoalsList) return;
+            els.activeGoalsList.innerHTML = '';
+            if (els.archivedGoalsList) els.archivedGoalsList.innerHTML = '';
+            
+            const activeGoals = (state.tracker.goals || []).filter(g => !g.completed);
+            const archivedGoals = (state.tracker.goals || []).filter(g => g.completed);
+            
+            if (activeGoals.length === 0) {
+                els.activeGoalsList.classList.add('hidden');
+                els.goalsEmpty.classList.remove('hidden');
+            } else {
+                els.activeGoalsList.classList.remove('hidden');
+                els.goalsEmpty.classList.add('hidden');
+
+                activeGoals.forEach(goal => {
+                    const div = document.createElement('div');
+                    div.className = `flex items-center gap-3 p-3 rounded-xl border bg-card border-borderMain shadow-sm transition-all`;
+                    
+                    div.innerHTML = `
+                        <input type="checkbox" id="goal-${goal.id}" class="goal-checkbox w-5 h-5 rounded text-accent focus:ring-accent border-borderMain cursor-pointer" onchange="window.toggleGoal(${goal.id})">
+                        <label for="goal-${goal.id}" class="flex-1 text-sm font-semibold text-textMain cursor-pointer select-none transition-all">${goal.text}</label>
+                        <button onclick="window.deleteGoal(${goal.id})" class="text-textMuted hover:text-danger p-1.5 rounded-lg hover:bg-danger/10 transition-colors" title="Delete Goal">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                        </button>
+                    `;
+                    els.activeGoalsList.appendChild(div);
+                });
+            }
+
+            if (els.archivedGoalsContainer) {
+                document.getElementById('archive-count-text').innerText = `Archived Goals (${archivedGoals.length})`;
+                if (showArchived) {
+                    els.archivedGoalsContainer.classList.remove('hidden');
+                    els.archiveChevron.classList.add('rotate-180');
+                } else {
+                    els.archivedGoalsContainer.classList.add('hidden');
+                    els.archiveChevron.classList.remove('rotate-180');
+                }
+
+                archivedGoals.forEach(goal => {
+                    const div = document.createElement('div');
+                    div.className = `flex items-center gap-3 p-3 rounded-xl border bg-surface/50 border-borderMain/50 transition-all opacity-60 hover:opacity-100`;
+                    
+                    div.innerHTML = `
+                        <input type="checkbox" id="goal-${goal.id}" class="goal-checkbox w-5 h-5 rounded text-accent focus:ring-accent border-borderMain cursor-pointer" checked onchange="window.toggleGoal(${goal.id})">
+                        <label for="goal-${goal.id}" class="flex-1 text-sm font-semibold text-textMuted line-through cursor-pointer select-none transition-all">${goal.text}</label>
+                        <button onclick="window.deleteGoal(${goal.id})" class="text-textMuted hover:text-danger p-1.5 rounded-lg hover:bg-danger/10 transition-colors" title="Delete Goal">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                        </button>
+                    `;
+                    els.archivedGoalsList.appendChild(div);
+                });
+            }
+        }
+
 
         // --- Custom Confirm Modal Logic ---
         let pendingConfirmAction = null;
@@ -499,15 +742,16 @@
         };
 
         // --- Enlarged Media Modal Logic ---
-        window.openMediaModal = function(itemId) {
+        window.openMediaModal = function(itemId, mediaIndex = 0) {
             const item = getActiveSection().items.find(i => i.id === itemId);
-            if (!item || !item.imageUrl) return;
+            const mediaUrls = item.mediaUrls || (item.imageUrl ? [item.imageUrl] : []);
+            if (mediaUrls.length === 0) return;
 
-            const url = item.imageUrl;
+            const url = mediaUrls[mediaIndex];
             const container = document.getElementById('media-modal-content');
             let html = '';
 
-            const ytRegExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=|\/shorts\/)([^#\&\?]*).*/;
+            const ytRegExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=|\/shorts\/|\/live\/)([^#\&\?]*).*/;
             const ytMatch = url.match(ytRegExp);
             const fbRegExp = /(?:facebook\.com.*(?:\/videos\/|\/posts\/|\/p\/|\/photos\/|\/photo\/|\/photo\.php|\/story\.php|\/reel\/|\/permalink\.php|\/permalink\/|\/watch\/)|fb\.watch\/)/i;
             const spotifyRegExp = /open\.spotify\.com\/(track|album|playlist|episode|show)\/([a-zA-Z0-9]+)/i;
@@ -541,13 +785,15 @@
             } else if (url.match(fbRegExp)) {
                  const isFbVideo = url.includes('/videos/') || url.includes('fb.watch/') || url.includes('/reel/') || url.includes('/watch/');
                  const fbPlugin = isFbVideo ? 'video.php' : 'post.php';
-                 const showText = isFbVideo ? 'false' : 'true'; // Hide text for a pure video player experience
+                 const showText = isFbVideo ? 'false' : 'true';
                  let cleanUrl = url.split('?')[0];
                  if (url.includes('photo.php') || url.includes('story.php')) cleanUrl = url;
                  const encodedUrl = encodeURIComponent(cleanUrl);
                  html = `<div class="bg-black rounded-none sm:rounded-2xl overflow-hidden w-full max-w-4xl h-full max-h-[85vh] shadow-2xl flex items-center justify-center"><iframe class="w-full h-full" src="https://www.facebook.com/plugins/${fbPlugin}?href=${encodedUrl}&show_text=${showText}&width=800" style="border:none;" scrolling="no" frameborder="0" allowfullscreen="true" allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"></iframe></div>`;
-            } else if (url.match(/\.(mp4|webm|ogg)$/i) || url.includes('.mp4?')) {
+            } else if (url.match(/\.(mp4|webm|ogg)$/i) || url.includes('data:video/')) {
                  html = `<video controls autoplay ${item.isLoop ? 'loop' : ''} class="w-full max-h-[85vh] object-contain rounded-none sm:rounded-2xl shadow-2xl bg-black" src="${url}"></video>`;
+            } else if (url.startsWith('data:application/pdf') || url.toLowerCase().endsWith('.pdf')) {
+                 html = `<iframe class="w-full h-full max-w-5xl max-h-[90vh] bg-white rounded-none sm:rounded-2xl shadow-2xl" src="${url}" frameborder="0"></iframe>`;
             } else {
                  html = `<img src="${url}" alt="Enlarged Media" class="max-w-full max-h-[85vh] object-contain rounded-none sm:rounded-2xl shadow-2xl">`;
             }
@@ -558,7 +804,7 @@
 
         window.closeMediaModal = function() {
             document.getElementById('media-modal').classList.add('hidden');
-            document.getElementById('media-modal-content').innerHTML = ''; // Clear iframe/video to stop playback
+            document.getElementById('media-modal-content').innerHTML = '';
         };
 
         // --- Theme Switcher Logic ---
@@ -594,6 +840,7 @@
             if (btnAddItemText) btnAddItemText.innerText = isGaming ? 'ADD LOOT' : 'Add Item';
             
             if (els.searchInput) els.searchInput.placeholder = isGaming ? "Search inventory..." : "Search items...";
+            if (els.searchInputMobile) els.searchInputMobile.placeholder = isGaming ? "Search inventory..." : "Search items...";
 
             if(currentModalType === 'section' && els.inputTitle) {
                 els.inputTitle.placeholder = isGaming ? "e.g., Epic Quests, Potions..." : "e.g., Ideas, Watchlist...";
@@ -624,11 +871,20 @@
             els.statusText.innerText = "LOCAL SAVE";
             els.statusDot.parentElement.title = "Data is saved to this browser only";
 
-            const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+            let saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+            if (!saved) {
+                const oldSaved = localStorage.getItem('life_organizer_data_v1');
+                if (oldSaved) {
+                    saved = oldSaved;
+                    localStorage.setItem(LOCAL_STORAGE_KEY, oldSaved); 
+                }
+            }
+
             if (saved) {
                 try {
                     const parsed = JSON.parse(saved);
                     if (parsed.sections) state.sections = parsed.sections;
+                    if (parsed.tracker) state.tracker = parsed.tracker;
                 } catch (e) { console.error("Corrupt local data", e); }
             }
             finishLoading();
@@ -672,6 +928,7 @@
                             state.activeSectionId = state.sections[0].id;
                         }
                     }
+                    if (data.tracker) state.tracker = data.tracker;
                 }
                 finishLoading();
             }, (error) => {
@@ -684,15 +941,17 @@
         function finishLoading() {
             els.loadingOverlay.style.opacity = '0';
             setTimeout(() => els.loadingOverlay.style.display = 'none', 500);
+            initializeTracker();
             renderAll();
         }
 
         async function saveData() {
-            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({ sections: state.sections }));
+            const dataToSave = { sections: state.sections, tracker: state.tracker };
+            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(dataToSave));
             if (isCloudEnabled && db && currentUser) {
                 const docRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'pocket_peace_data', 'content');
                 try {
-                    await setDoc(docRef, { sections: state.sections });
+                    await setDoc(docRef, dataToSave);
                 } catch (e) {
                     els.statusDot.className = "h-1.5 w-1.5 rounded-full bg-red-500";
                 }
@@ -707,6 +966,7 @@
             state.activeSectionId = id;
             state.searchQuery = '';
             if (els.searchInput) els.searchInput.value = '';
+            if (els.searchInputMobile) els.searchInputMobile.value = '';
             if(window.innerWidth < 768) window.toggleSidebar();
             renderAll();
         }
@@ -799,6 +1059,134 @@
             draggedItemId = null;
         }
 
+        // --- Helper Function: Generate HTML for a specific media item ---
+        window.generateMediaHtml = function(url, item, mediaIndex, totalMediaCount) {
+            const isGaming = document.documentElement.getAttribute('data-theme') === 'gaming';
+            const isSensitive = item.isSensitive || false;
+            const blurClass = isSensitive ? `blur-md hover:blur-none transition-all duration-300 cursor-pointer select-none bg-surface` : '';
+            const toggleAttr = isSensitive ? 'onclick="if(this.classList.contains(\'blur-md\')){this.classList.remove(\'blur-md\', \'select-none\')}else{this.classList.add(\'blur-md\', \'select-none\')}"' : '';
+            
+            const expandBtnHtml = `<button type="button" onclick="event.stopPropagation(); window.openMediaModal(${item.id}, ${mediaIndex})" class="absolute top-2 left-2 bg-black/80 text-white p-2 rounded-xl hover:bg-accent transition-colors backdrop-blur-md opacity-0 group-hover:opacity-100 z-30 shadow-lg border border-white/20 flex items-center justify-center gap-1.5" title="Enlarge Media">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
+            </button>`;
+
+            const ytRegExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=|\/shorts\/|\/live\/)([^#\&\?]*).*/;
+            const ytMatch = url.match(ytRegExp);
+            const fbRegExp = /(?:facebook\.com.*(?:\/videos\/|\/posts\/|\/p\/|\/photos\/|\/photo\/|\/photo\.php|\/story\.php|\/reel\/|\/permalink\.php|\/permalink\/|\/watch\/)|fb\.watch\/)/i;
+            const spotifyRegExp = /open\.spotify\.com\/(track|album|playlist|episode|show)\/([a-zA-Z0-9]+)/i;
+            const spotifyMatch = url.match(spotifyRegExp);
+            const appleMusicRegExp = /music\.apple\.com\/(?:[a-zA-Z]{2}\/)?(album|playlist|song|station)/i;
+            const appleMusicMatch = url.match(appleMusicRegExp);
+            const xRegExp = /(?:twitter\.com|x\.com)\/\w+\/status\/(\d+)/i;
+            const xMatch = url.match(xRegExp);
+
+            const slideClass = totalMediaCount > 1 ? "min-w-full snap-center" : "w-full";
+
+            if (ytMatch && ytMatch[2].length === 11) {
+                let videoId = ytMatch[2];
+                const loopParam = item.isLoop ? `&loop=1&playlist=${videoId}` : '';
+                return `
+                <div class="${slideClass} mb-3 flex flex-col gap-1.5 flex-shrink-0 relative z-10" onmouseenter="this.closest('.item-card').draggable=false" onmouseleave="this.closest('.item-card').draggable=true">
+                    <div class="w-full rounded-2xl overflow-hidden border border-borderMain bg-black/5 aspect-video relative ${blurClass}" ${toggleAttr}>
+                        ${expandBtnHtml}
+                        <iframe class="w-full h-full pointer-events-auto" src="https://www.youtube-nocookie.com/embed/${videoId}?rel=0${loopParam}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+                    </div>
+                    <div class="flex items-center justify-between mt-0.5">
+                        <a href="${url}" target="_blank" draggable="false" class="text-[11px] text-textMuted hover:text-[#FF0000] flex items-center gap-1 font-bold ml-1 transition-colors w-fit">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="currentColor" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122-2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+                            YouTube
+                        </a>
+                        ${item.isLoop ? `<span class="text-[10px] text-accent font-bold uppercase flex items-center gap-1"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg> Looping</span>` : ''}
+                    </div>
+                </div>`;
+            } else if (spotifyMatch) {
+                const type = spotifyMatch[1]; 
+                const id = spotifyMatch[2];
+                const embedHeight = (type === 'track') ? '152' : '352'; 
+                return `
+                <div class="${slideClass} mb-3 flex flex-col gap-1.5 flex-shrink-0 relative z-10" onmouseenter="this.closest('.item-card').draggable=false" onmouseleave="this.closest('.item-card').draggable=true">
+                    <div class="w-full rounded-2xl overflow-hidden border border-borderMain bg-black/5 relative ${blurClass}" ${toggleAttr}>
+                        ${expandBtnHtml}
+                        <iframe style="border-radius:16px" src="https://open.spotify.com/embed/${type}/${id}?utm_source=generator&theme=0" width="100%" height="${embedHeight}" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy" class="pointer-events-auto"></iframe>
+                    </div>
+                    <a href="${url}" target="_blank" draggable="false" class="text-[11px] text-textMuted hover:text-[#1DB954] flex items-center gap-1 font-bold ml-1 transition-colors w-fit">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.54.659.3 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15.001 10.62 18.66 12.9c.42.24.601.84.3 1.14zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.6.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
+                        Spotify
+                    </a>
+                </div>`;
+            } else if (appleMusicMatch) {
+                let embedUrl = url;
+                if (!embedUrl.includes('embed.music.apple.com')) {
+                    embedUrl = embedUrl.replace('music.apple.com', 'embed.music.apple.com');
+                }
+                const isTrack = url.includes('?i=') || appleMusicMatch[1] === 'song';
+                const embedHeight = isTrack ? '175' : '450';
+                return `
+                <div class="${slideClass} mb-3 flex flex-col gap-1.5 flex-shrink-0 relative z-10" onmouseenter="this.closest('.item-card').draggable=false" onmouseleave="this.closest('.item-card').draggable=true">
+                    <div class="w-full rounded-2xl overflow-hidden border border-borderMain bg-black/5 relative ${blurClass}" ${toggleAttr}>
+                        ${expandBtnHtml}
+                        <iframe sandbox="allow-forms allow-popups allow-same-origin allow-scripts allow-storage-access-by-user-activation allow-top-navigation-by-user-activation" allow="autoplay *; encrypted-media *; fullscreen *; clipboard-write" frameborder="0" height="${embedHeight}" style="width:100%;max-width:660px;overflow:hidden;background:transparent;border-radius:16px;" src="${embedUrl}" class="pointer-events-auto"></iframe>
+                    </div>
+                    <a href="${url}" target="_blank" draggable="false" class="text-[11px] text-textMuted hover:text-[#FA243C] flex items-center gap-1 font-bold ml-1 transition-colors w-fit">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="currentColor" viewBox="0 0 24 24"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.15 2.95.92 3.78 2.12-3.17 1.82-2.61 5.86.6 7.15-.75 1.56-1.57 3.01-3.03 3.74zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.33 2.35-1.92 4.29-3.74 4.25z"/></svg>
+                        Apple Music
+                    </a>
+                </div>`;
+            } else if (xMatch) {
+                const tweetId = xMatch[1];
+                const theme = document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+                return `
+                <div class="${slideClass} mb-3 flex flex-col gap-1.5 flex-shrink-0 relative z-10" onmouseenter="this.closest('.item-card').draggable=false" onmouseleave="this.closest('.item-card').draggable=true">
+                    <div class="w-full rounded-2xl overflow-hidden border border-borderMain bg-white h-[450px] flex items-center justify-center relative ${blurClass}" ${toggleAttr}>
+                        ${expandBtnHtml}
+                        <iframe class="w-full h-full pointer-events-auto" src="https://platform.twitter.com/embed/Tweet.html?id=${tweetId}&theme=${theme}" style="border:none;" scrolling="yes" frameborder="0" allowfullscreen="true" allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"></iframe>
+                    </div>
+                    <a href="${url}" target="_blank" draggable="false" class="text-[11px] text-textMuted hover:text-textMain flex items-center gap-1 font-bold ml-1 transition-colors w-fit">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                        X Post
+                    </a>
+                </div>`;
+            } else if (url.match(fbRegExp)) {
+                const isFbVideo = url.includes('/videos/') || url.includes('fb.watch/') || url.includes('/reel/') || url.includes('/watch/');
+                const fbPlugin = isFbVideo ? 'video.php' : 'post.php';
+                let cleanUrl = url;
+                if (!cleanUrl.includes('photo.php') && !cleanUrl.includes('story.php')) cleanUrl = cleanUrl.split('?')[0]; 
+                const encodedUrl = encodeURIComponent(cleanUrl);
+                return `
+                <div class="${slideClass} mb-3 flex flex-col gap-1.5 flex-shrink-0 relative z-10" onmouseenter="this.closest('.item-card').draggable=false" onmouseleave="this.closest('.item-card').draggable=true">
+                    <div class="w-full rounded-2xl overflow-hidden border border-borderMain bg-white h-[500px] flex items-center justify-center relative ${blurClass}" ${toggleAttr}>
+                        ${expandBtnHtml}
+                        <iframe class="w-full h-full pointer-events-auto" src="https://www.facebook.com/plugins/${fbPlugin}?href=${encodedUrl}&show_text=true&width=500" style="border:none;" scrolling="yes" frameborder="0" allowfullscreen="true" allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"></iframe>
+                    </div>
+                    <a href="${url}" target="_blank" draggable="false" class="text-[11px] text-textMuted hover:text-accent flex items-center gap-1 font-bold ml-1 transition-colors w-fit">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                        Facebook
+                    </a>
+                </div>`;
+            } else if (url.startsWith('data:application/pdf') || url.toLowerCase().endsWith('.pdf')) {
+                return `
+                <div class="${slideClass} mb-3 flex flex-col gap-1.5 flex-shrink-0 relative z-10">
+                    <div class="w-full rounded-2xl overflow-hidden border border-borderMain bg-black/5 aspect-video relative flex flex-col items-center justify-center ${blurClass}" ${toggleAttr}>
+                        ${expandBtnHtml}
+                        <span class="text-4xl mb-2 drop-shadow-md">📄</span>
+                        <span class="text-sm font-bold text-textMain text-center px-4">PDF Document</span>
+                    </div>
+                </div>`;
+            } else if (url.match(/\.(mp4|webm|ogg)$/i) || url.includes('data:video/')) {
+                return `
+                <div class="${slideClass} mb-3 rounded-2xl overflow-hidden flex-shrink-0 relative z-10 border border-borderMain bg-black/5 aspect-video relative ${blurClass}" ${toggleAttr} onmouseenter="this.closest('.item-card').draggable=false" onmouseleave="this.closest('.item-card').draggable=true">
+                    ${expandBtnHtml}
+                    <video controls ${item.isLoop ? 'loop' : ''} class="w-full h-full object-contain bg-black pointer-events-auto" src="${url}"></video>
+                </div>`;
+            } else {
+                return `
+                <div class="${slideClass} mb-3 rounded-2xl overflow-hidden flex-shrink-0 relative z-10 border border-borderMain bg-black/5 flex items-center justify-center relative ${blurClass}" ${toggleAttr}>
+                    ${expandBtnHtml}
+                    <img src="${url}" alt="Memory" class="max-w-full max-h-64 object-contain group-hover:scale-105 transition-transform duration-500">
+                </div>`;
+            }
+        };
+
         function renderAll() {
             renderSidebar();
             renderMain();
@@ -854,6 +1242,7 @@
             const section = getActiveSection();
             if (!section) return;
             const isGaming = document.documentElement.getAttribute('data-theme') === 'gaming';
+            const isSensitive = false; // base card level not sensitive
 
             const titleText = section.title;
             const titleClass = isGaming ? "text-2xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-purple-400 font-display tracking-widest drop-shadow-sm line-clamp-1" : "text-xl sm:text-2xl font-bold text-textMain tracking-tight line-clamp-1";
@@ -908,7 +1297,7 @@
 
                 filteredItems.forEach((item, index) => {
                     const card = document.createElement('div');
-                    card.style.animationDelay = `${index * 0.05}s`; // Staggered fade in
+                    card.style.animationDelay = `${index * 0.05}s`; 
                     card.className = `p-5 sm:p-6 rounded-3xl item-card flex flex-col gap-4 relative fade-in h-full group overflow-hidden cursor-grab active:cursor-grabbing opacity-0`;
                     
                     card.draggable = true;
@@ -928,128 +1317,37 @@
                             <span class="truncate">${isGaming ? 'LAUNCH LINK' : 'Open Link'}</span>
                         </a>` : '';
 
-                    const isSensitive = item.isSensitive || false;
-                    const blurClass = isSensitive ? `blur-md hover:blur-none transition-all duration-300 cursor-pointer select-none bg-surface` : '';
-                    const toggleAttr = isSensitive ? 'onclick="if(this.classList.contains(\'blur-md\')){this.classList.remove(\'blur-md\', \'select-none\')}else{this.classList.add(\'blur-md\', \'select-none\')}"' : '';
-                    const titleLock = isSensitive ? `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block ml-1.5 mb-1 ${isGaming ? 'text-accent drop-shadow-[0_0_5px_rgba(236,72,153,0.8)]' : 'text-textMuted'}" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>` : '';
+                    const isCardSensitive = item.isSensitive || false;
+                    const cardBlurClass = isCardSensitive ? `blur-md hover:blur-none transition-all duration-300 cursor-pointer select-none bg-surface` : '';
+                    const cardToggleAttr = isCardSensitive ? 'onclick="if(this.classList.contains(\'blur-md\')){this.classList.remove(\'blur-md\', \'select-none\')}else{this.classList.add(\'blur-md\', \'select-none\')}"' : '';
+                    const titleLock = isCardSensitive ? `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block ml-1.5 mb-1 ${isGaming ? 'text-accent drop-shadow-[0_0_5px_rgba(236,72,153,0.8)]' : 'text-textMuted'}" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>` : '';
 
-                    let mediaHtml = '';
-                    if (item.imageUrl) {
-                        const url = item.imageUrl;
-                        
-                        const ytRegExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=|\/shorts\/)([^#\&\?]*).*/;
-                        const ytMatch = url.match(ytRegExp);
-                        const fbRegExp = /(?:facebook\.com.*(?:\/videos\/|\/posts\/|\/p\/|\/photos\/|\/photo\/|\/photo\.php|\/story\.php|\/reel\/|\/permalink\.php|\/permalink\/|\/watch\/)|fb\.watch\/)/i;
-                        const spotifyRegExp = /open\.spotify\.com\/(track|album|playlist|episode|show)\/([a-zA-Z0-9]+)/i;
-                        const spotifyMatch = url.match(spotifyRegExp);
-                        const appleMusicRegExp = /music\.apple\.com\/(?:[a-zA-Z]{2}\/)?(album|playlist|song|station)/i;
-                        const appleMusicMatch = url.match(appleMusicRegExp);
-                        const xRegExp = /(?:twitter\.com|x\.com)\/\w+\/status\/(\d+)/i;
-                        const xMatch = url.match(xRegExp);
+                    // Retrieve media array (fallback to legacy imageUrl)
+                    const mediaUrls = item.mediaUrls || (item.imageUrl ? [item.imageUrl] : []);
+                    let mediaContentHtml = '';
 
-                        if (ytMatch && ytMatch[2].length === 11) {
-                            let videoId = ytMatch[2];
-                            const loopParam = item.isLoop ? `&loop=1&playlist=${videoId}` : ''; // Add loop parameter logic
-                            mediaHtml = `
-                            <div class="w-full mb-3 flex flex-col gap-1.5 flex-shrink-0 relative z-10" onmouseenter="this.closest('.item-card').draggable=false" onmouseleave="this.closest('.item-card').draggable=true">
-                                <div class="w-full rounded-2xl overflow-hidden border border-borderMain bg-black/5 aspect-video relative ${blurClass}" ${toggleAttr}>
-                                    <iframe class="w-full h-full pointer-events-auto" src="https://www.youtube-nocookie.com/embed/${videoId}?rel=0${loopParam}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
-                                </div>
-                                <div class="flex items-center justify-between mt-0.5">
-                                    <a href="${url}" target="_blank" draggable="false" class="text-[11px] text-textMuted hover:text-[#FF0000] flex items-center gap-1 font-bold ml-1 transition-colors w-fit">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="currentColor" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122-2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
-                                        YouTube
-                                    </a>
-                                    ${item.isLoop ? `<span class="text-[10px] text-accent font-bold uppercase flex items-center gap-1"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg> Looping</span>` : ''}
-                                </div>
-                            </div>`;
-                        } else if (spotifyMatch) {
-                            const type = spotifyMatch[1]; 
-                            const id = spotifyMatch[2];
-                            const embedHeight = (type === 'track') ? '152' : '352'; 
-                            
-                            mediaHtml = `
-                            <div class="w-full mb-3 flex flex-col gap-1.5 flex-shrink-0 relative z-10" onmouseenter="this.closest('.item-card').draggable=false" onmouseleave="this.closest('.item-card').draggable=true">
-                                <div class="w-full rounded-2xl overflow-hidden border border-borderMain bg-black/5 relative ${blurClass}" ${toggleAttr}>
-                                    <iframe style="border-radius:16px" src="https://open.spotify.com/embed/${type}/${id}?utm_source=generator&theme=0" width="100%" height="${embedHeight}" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy" class="pointer-events-auto"></iframe>
-                                </div>
-                                <a href="${url}" target="_blank" draggable="false" class="text-[11px] text-textMuted hover:text-[#1DB954] flex items-center gap-1 font-bold ml-1 transition-colors w-fit">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.54.659.3 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15.001 10.62 18.66 12.9c.42.24.601.84.3 1.14zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.6.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
-                                    Spotify
-                                </a>
-                            </div>`;
-                        } else if (appleMusicMatch) {
-                            let embedUrl = url;
-                            if (!embedUrl.includes('embed.music.apple.com')) {
-                                embedUrl = embedUrl.replace('music.apple.com', 'embed.music.apple.com');
-                            }
-                            const isTrack = url.includes('?i=') || appleMusicMatch[1] === 'song';
-                            const embedHeight = isTrack ? '175' : '450';
-                            
-                            mediaHtml = `
-                            <div class="w-full mb-3 flex flex-col gap-1.5 flex-shrink-0 relative z-10" onmouseenter="this.closest('.item-card').draggable=false" onmouseleave="this.closest('.item-card').draggable=true">
-                                <div class="w-full rounded-2xl overflow-hidden border border-borderMain bg-black/5 relative ${blurClass}" ${toggleAttr}>
-                                    ${expandBtnHtml}
-                                    <iframe sandbox="allow-forms allow-popups allow-same-origin allow-scripts allow-storage-access-by-user-activation allow-top-navigation-by-user-activation" allow="autoplay *; encrypted-media *; fullscreen *; clipboard-write" frameborder="0" height="${embedHeight}" style="width:100%;max-width:660px;overflow:hidden;background:transparent;border-radius:16px;" src="${embedUrl}" class="pointer-events-auto"></iframe>
-                                </div>
-                                <a href="${url}" target="_blank" draggable="false" class="text-[11px] text-textMuted hover:text-[#FA243C] flex items-center gap-1 font-bold ml-1 transition-colors w-fit">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="currentColor" viewBox="0 0 24 24"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.15 2.95.92 3.78 2.12-3.17 1.82-2.61 5.86.6 7.15-.75 1.56-1.57 3.01-3.03 3.74zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.33 2.35-1.92 4.29-3.74 4.25z"/></svg>
-                                    Apple Music
-                                </a>
-                            </div>`;
-                        } else if (xMatch) {
-                            const tweetId = xMatch[1];
-                            const theme = document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
-                            
-                            mediaHtml = `
-                            <div class="w-full mb-3 flex flex-col gap-1.5 flex-shrink-0 relative z-10" onmouseenter="this.closest('.item-card').draggable=false" onmouseleave="this.closest('.item-card').draggable=true">
-                                <div class="w-full rounded-2xl overflow-hidden border border-borderMain bg-white h-[450px] flex items-center justify-center relative ${blurClass}" ${toggleAttr}>
-                                    <iframe class="w-full h-full pointer-events-auto" src="https://platform.twitter.com/embed/Tweet.html?id=${tweetId}&theme=${theme}" style="border:none;" scrolling="yes" frameborder="0" allowfullscreen="true" allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"></iframe>
-                                </div>
-                                <a href="${url}" target="_blank" draggable="false" class="text-[11px] text-textMuted hover:text-textMain flex items-center gap-1 font-bold ml-1 transition-colors w-fit">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-                                    X Post
-                                </a>
-                            </div>`;
-                        } else if (url.match(fbRegExp)) {
-                            const isFbVideo = url.includes('/videos/') || url.includes('fb.watch/') || url.includes('/reel/') || url.includes('/watch/');
-                            const fbPlugin = isFbVideo ? 'video.php' : 'post.php';
-                            
-                            let cleanUrl = url;
-                            if (!cleanUrl.includes('photo.php') && !cleanUrl.includes('story.php')) {
-                                cleanUrl = cleanUrl.split('?')[0]; 
-                            }
-                            const encodedUrl = encodeURIComponent(cleanUrl);
-                            
-                            mediaHtml = `
-                            <div class="w-full mb-3 flex flex-col gap-1.5 flex-shrink-0 relative z-10" onmouseenter="this.closest('.item-card').draggable=false" onmouseleave="this.closest('.item-card').draggable=true">
-                                <div class="w-full rounded-2xl overflow-hidden border border-borderMain bg-white h-[500px] flex items-center justify-center relative ${blurClass}" ${toggleAttr}>
-                                    <iframe class="w-full h-full pointer-events-auto" src="https://www.facebook.com/plugins/${fbPlugin}?href=${encodedUrl}&show_text=true&width=500" style="border:none;" scrolling="yes" frameborder="0" allowfullscreen="true" allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"></iframe>
-                                </div>
-                                <a href="${url}" target="_blank" draggable="false" class="text-[11px] text-textMuted hover:text-accent flex items-center gap-1 font-bold ml-1 transition-colors w-fit">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
-                                    Facebook
-                                </a>
-                            </div>`;
-                        } else if (url.match(/\.(mp4|webm|ogg)$/i) || url.includes('.mp4?')) {
-                            mediaHtml = `
-                            <div class="w-full mb-3 rounded-2xl overflow-hidden flex-shrink-0 relative z-10 border border-borderMain bg-black/5 aspect-video relative ${blurClass}" ${toggleAttr} onmouseenter="this.closest('.item-card').draggable=false" onmouseleave="this.closest('.item-card').draggable=true">
-                                <video controls ${item.isLoop ? 'loop' : ''} class="w-full h-full object-contain bg-black pointer-events-auto" src="${url}"></video>
+                    if (mediaUrls.length > 0) {
+                        const slidesHtml = mediaUrls.map((url, idx) => window.generateMediaHtml(url, item, idx, mediaUrls.length)).join('');
+                        if (mediaUrls.length > 1) {
+                            mediaContentHtml = `
+                            <div class="w-full mb-3 flex overflow-x-auto snap-x snap-mandatory gap-4 hide-scrollbar pb-2">
+                                ${slidesHtml}
+                            </div>
+                            <div class="text-[10px] text-center text-textMuted font-bold mt-[-8px] mb-3 uppercase tracking-wider flex items-center justify-center gap-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
+                                Swipe to view ${mediaUrls.length} files
                             </div>`;
                         } else {
-                            mediaHtml = `
-                            <div class="w-full mb-3 rounded-2xl overflow-hidden flex-shrink-0 relative z-10 border border-borderMain bg-black/5 flex items-center justify-center relative ${blurClass}" ${toggleAttr}>
-                                <img src="${url}" alt="Memory" class="max-w-full max-h-64 object-contain group-hover:scale-105 transition-transform duration-500">
-                            </div>`;
+                            mediaContentHtml = `<div class="w-full">${slidesHtml}</div>`;
                         }
                     }
 
-                    const notesHtml = item.note ? `<div class="text-sm leading-relaxed whitespace-pre-wrap break-words flex-grow relative z-10 font-medium ${blurClass} ${isGaming ? 'text-indigo-200 p-4 rounded-2xl bg-black/20 border border-indigo-500/10 shadow-inner' : 'text-textMuted'}" ${toggleAttr} title="${isSensitive ? 'Click to reveal' : ''}">${item.note}</div>` : '<div class="flex-grow relative z-10"></div>';
+                    const notesHtml = item.note ? `<div class="text-sm leading-relaxed whitespace-pre-wrap break-words flex-grow relative z-10 font-medium ${cardBlurClass} ${isGaming ? 'text-indigo-200 p-4 rounded-2xl bg-black/20 border border-indigo-500/10 shadow-inner' : 'text-textMuted'}" ${cardToggleAttr} title="${isCardSensitive ? 'Click to reveal' : ''}">${item.note}</div>` : '<div class="flex-grow relative z-10"></div>';
 
                     card.innerHTML = `
                         ${accentHtml}
-                        ${mediaHtml}
-                        <div class="flex flex-col gap-1.5 relative z-10">
+                        ${mediaContentHtml}
+                        <div class="flex flex-col gap-1.5 relative z-10 mt-1">
                             <div class="flex justify-between items-start">
                                 <h3 class="${isGaming ? 'font-display text-2xl tracking-widest' : 'font-bold text-lg'} text-textMain leading-snug break-words pr-14">${item.title} ${titleLock}</h3>
                                 
@@ -1062,10 +1360,6 @@
                                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
                                     </button>
                                     <div class="w-px h-6 bg-borderMain mx-0.5 my-auto action-btn"></div>
-                                    <!-- Enlarge Button -->
-                                    ${item.imageUrl ? `<button onclick="window.openMediaModal(${item.id})" class="action-btn text-textMuted hover:text-accent bg-surface p-2 rounded-xl border border-borderMain hover:shadow-sm hover:border-accent/30 transition-all" title="Enlarge Media">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
-                                    </button>` : ''}
                                     <button onclick="window.editItem(${item.id})" class="action-btn text-textMuted hover:text-accent bg-surface p-2 rounded-xl border border-borderMain hover:shadow-sm hover:border-accent/30 transition-all" title="Edit">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                                     </button>
@@ -1087,6 +1381,58 @@
             }
         }
 
+        window.renderMediaPreviews = function() {
+            const container = els.mediaPreviewContainer;
+            container.innerHTML = '';
+            if (currentMediaList.length === 0) {
+                container.classList.add('hidden');
+                return;
+            }
+            container.classList.remove('hidden');
+            
+            currentMediaList.forEach((url, idx) => {
+                const wrapper = document.createElement('div');
+                wrapper.className = "relative w-20 h-20 rounded-2xl overflow-hidden border border-borderMain flex-shrink-0 group flex items-center justify-center bg-card shadow-sm";
+                
+                let previewHtml = '';
+                if (url.startsWith('data:application/pdf') || url.toLowerCase().includes('.pdf')) {
+                    previewHtml = `<span class="text-3xl drop-shadow-sm">📄</span>`;
+                } else if (url.match(/youtu\.be|youtube\.com|spotify\.com|apple\.com|twitter\.com|facebook\.com/)) {
+                    previewHtml = `<span class="text-3xl drop-shadow-sm">🔗</span>`;
+                } else if (url.match(/\.(mp4|webm|ogg)$/i) || url.includes('data:video/')) {
+                    previewHtml = `<span class="text-3xl drop-shadow-sm">🎥</span>`;
+                } else {
+                    previewHtml = `<img src="${url}" class="w-full h-full object-cover">`;
+                }
+                
+                wrapper.innerHTML = `
+                    ${previewHtml}
+                    <button type="button" onclick="window.removeMedia(${idx})" class="absolute top-1 right-1 bg-black/80 text-white p-1 rounded-lg hover:bg-danger transition-colors opacity-0 group-hover:opacity-100 backdrop-blur-md">
+                        <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                `;
+                container.appendChild(wrapper);
+            });
+        };
+
+        window.addMediaLink = function() {
+            const input = els.inputImage;
+            let url = input.value.trim();
+            if (url) {
+                if (!/^https?:\/\//i.test(url) && !url.startsWith('data:')) {
+                    url = 'https://' + url;
+                }
+                currentMediaList.push(url);
+                input.value = '';
+                window.renderMediaPreviews();
+            }
+        };
+
+        window.removeMedia = function(idx) {
+            currentMediaList.splice(idx, 1);
+            window.renderMediaPreviews();
+        };
+
         window.handleFormSubmit = function(e) {
             e.preventDefault();
             const title = els.inputTitle ? els.inputTitle.value.trim() : '';
@@ -1101,14 +1447,30 @@
                 const activeSection = getActiveSection();
                 const isSensitive = els.inputSensitive ? els.inputSensitive.checked : false;
                 const isLoop = els.inputLoop ? els.inputLoop.checked : false;
-                const finalImageUrl = currentBase64Image || (els.inputImage ? els.inputImage.value.trim() : '');
-
+                
+                // Auto-add pending media link if user forgot to click "Add"
+                let pendingMedia = els.inputImage ? els.inputImage.value.trim() : '';
+                if (pendingMedia) {
+                    if (!/^https?:\/\//i.test(pendingMedia) && !pendingMedia.startsWith('data:')) {
+                        pendingMedia = 'https://' + pendingMedia;
+                    }
+                    currentMediaList.push(pendingMedia);
+                    els.inputImage.value = '';
+                }
+                
+                let finalLink = els.inputLink ? els.inputLink.value.trim() : '';
+                if (finalLink && !/^https?:\/\//i.test(finalLink)) {
+                    finalLink = 'https://' + finalLink;
+                }
+                
                 if (editingItemId) {
                     const item = activeSection.items.find(i => i.id === editingItemId);
                     if (item) {
                         item.title = title; 
-                        item.link = els.inputLink ? els.inputLink.value.trim() : '';
-                        item.imageUrl = finalImageUrl;
+                        item.link = finalLink;
+                        item.mediaUrls = [...currentMediaList];
+                        // Kept for backward compatibility
+                        item.imageUrl = currentMediaList.length > 0 ? currentMediaList[0] : '';
                         item.note = els.inputDesc ? els.inputDesc.value.trim() : ''; 
                         item.isSensitive = isSensitive;
                         item.isLoop = isLoop;
@@ -1118,8 +1480,9 @@
                     const newItem = {
                         id: Date.now(), 
                         title: title, 
-                        link: els.inputLink ? els.inputLink.value.trim() : '',
-                        imageUrl: finalImageUrl,
+                        link: finalLink,
+                        mediaUrls: [...currentMediaList],
+                        imageUrl: currentMediaList.length > 0 ? currentMediaList[0] : '',
                         note: els.inputDesc ? els.inputDesc.value.trim() : '', 
                         date: new Date().toLocaleDateString(), 
                         isSensitive: isSensitive,
@@ -1156,13 +1519,8 @@
             if (els.inputLoop) els.inputLoop.checked = item.isLoop || false;
 
             window.clearImage();
-            if (item.imageUrl && item.imageUrl.startsWith('data:image')) {
-                currentBase64Image = item.imageUrl;
-                if (els.imagePreview) els.imagePreview.src = item.imageUrl;
-                if (els.imagePreviewContainer) els.imagePreviewContainer.classList.remove('hidden');
-            } else {
-                if (els.inputImage) els.inputImage.value = item.imageUrl || '';
-            }
+            currentMediaList = item.mediaUrls ? [...item.mediaUrls] : (item.imageUrl ? [item.imageUrl] : []);
+            window.renderMediaPreviews();
             
             const isGaming = document.documentElement.getAttribute('data-theme') === 'gaming';
             if (els.modalTitle) {
@@ -1245,54 +1603,62 @@
                     window.closeMediaModal();
                 } else if(document.getElementById('confirm-modal') && !document.getElementById('confirm-modal').classList.contains('hidden')) {
                     window.closeConfirmModal();
+                } else if(els.goalsDrawer && !els.goalsDrawer.classList.contains('translate-x-full')) {
+                    window.toggleGoalsDrawer();
                 } else if(els.modal && !els.modal.classList.contains('hidden')) {
                     window.closeModal();
                 }
             }
         });
 
-        function processImageFile(file) {
-            if (!file || !file.type.startsWith('image/')) return;
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const img = new Image();
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    const MAX_WIDTH = 800;
-                    const MAX_HEIGHT = 800;
-                    let width = img.width;
-                    let height = img.height;
-
-                    if (width > height) {
-                        if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
-                    } else {
-                        if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
-                    }
-                    canvas.width = width; canvas.height = height;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, width, height);
-                    
-                    currentBase64Image = canvas.toDataURL('image/jpeg', 0.7);
-                    if (els.inputImage) els.inputImage.value = ''; 
-                    if (els.imagePreview) els.imagePreview.src = currentBase64Image;
-                    if (els.imagePreviewContainer) els.imagePreviewContainer.classList.remove('hidden');
-                }
-                img.src = e.target.result;
-            }
-            reader.readAsDataURL(file);
-        }
-
         window.handleFileUpload = function(e) {
-            const file = e.target.files[0];
-            if (file) processImageFile(file);
+            const files = e.target.files;
+            if (!files || files.length === 0) return;
+            
+            Array.from(files).forEach(file => {
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const img = new Image();
+                        img.onload = () => {
+                            const canvas = document.createElement('canvas');
+                            const MAX_WIDTH = 800;
+                            const MAX_HEIGHT = 800;
+                            let width = img.width;
+                            let height = img.height;
+
+                            if (width > height) {
+                                if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
+                            } else {
+                                if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
+                            }
+                            canvas.width = width; canvas.height = height;
+                            const ctx = canvas.getContext('2d');
+                            ctx.drawImage(img, 0, 0, width, height);
+                            
+                            currentMediaList.push(canvas.toDataURL('image/jpeg', 0.7));
+                            window.renderMediaPreviews();
+                        }
+                        img.src = e.target.result;
+                    }
+                    reader.readAsDataURL(file);
+                } else if (file.type === 'application/pdf') {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        currentMediaList.push(e.target.result);
+                        window.renderMediaPreviews();
+                    }
+                    reader.readAsDataURL(file);
+                }
+            });
+            e.target.value = ''; // clear input
         };
 
         window.clearImage = function() {
-            currentBase64Image = '';
+            currentMediaList = [];
+            window.renderMediaPreviews();
             if (els.inputImage) els.inputImage.value = '';
             if (els.inputFile) els.inputFile.value = '';
-            if (els.imagePreview) els.imagePreview.src = '';
-            if (els.imagePreviewContainer) els.imagePreviewContainer.classList.add('hidden');
         };
 
         window.addEventListener('paste', e => {
@@ -1301,13 +1667,14 @@
             for (let item of items) {
                 if (item.type.indexOf('image') === 0) {
                     const blob = item.getAsFile();
-                    processImageFile(blob);
+                    // Process as file array
+                    window.handleFileUpload({ target: { files: [blob] } });
                 }
             }
         });
 
         window.exportData = function() {
-            const dataStr = JSON.stringify({ sections: state.sections }, null, 2);
+            const dataStr = JSON.stringify({ sections: state.sections, tracker: state.tracker }, null, 2);
             const blob = new Blob([dataStr], { type: "application/json" });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -1328,13 +1695,54 @@
                 try {
                     const data = JSON.parse(e.target.result);
                     if (data && data.sections && Array.isArray(data.sections)) {
-                        state.sections = data.sections;
-                        if (!state.sections.find(s => s.id === state.activeSectionId)) {
-                            state.activeSectionId = state.sections[0]?.id || 'default';
+                        
+                        // MERGE LOGIC: Combine imported data with existing data
+                        data.sections.forEach(importedSection => {
+                            // Look for an existing collection with the exact same name
+                            let existingSection = state.sections.find(s => s.title.toLowerCase() === importedSection.title.toLowerCase());
+                            
+                            if (existingSection) {
+                                // Add items to the existing collection
+                                importedSection.items.forEach(importedItem => {
+                                    // Prevent exact duplicate items based on their unique ID
+                                    if (!existingSection.items.find(i => i.id === importedItem.id)) {
+                                        // Ensure the ID doesn't clash with any other item across the app
+                                        let isIdUnique = !state.sections.some(s => s.items.some(i => i.id === importedItem.id));
+                                        let itemToAdd = { ...importedItem };
+                                        if (!isIdUnique) {
+                                            itemToAdd.id = Date.now() + Math.floor(Math.random() * 10000);
+                                        }
+                                        existingSection.items.unshift(itemToAdd);
+                                    }
+                                });
+                            } else {
+                                // Create a completely new collection tab
+                                let newSection = { ...importedSection };
+                                let isSecIdUnique = !state.sections.some(s => s.id === newSection.id);
+                                if (!isSecIdUnique) {
+                                    newSection.id = 'sec-' + Date.now() + Math.floor(Math.random() * 10000);
+                                }
+                                state.sections.push(newSection);
+                            }
+                        });
+
+                        // Merge Tracker Goals safely
+                        if (data.tracker && data.tracker.goals) {
+                            data.tracker.goals.forEach(importedGoal => {
+                                // Check if goal text already exists to avoid duplicates
+                                if (!state.tracker.goals.find(g => g.text.toLowerCase() === importedGoal.text.toLowerCase())) {
+                                    state.tracker.goals.push({
+                                        ...importedGoal,
+                                        id: Date.now() + Math.floor(Math.random() * 10000)
+                                    });
+                                }
+                            });
                         }
+
                         saveData();
                         renderAll();
-                        showToast('Data imported successfully!');
+                        initializeTracker();
+                        showToast('Data imported and merged safely!');
                     } else {
                         showToast('Invalid backup file format.');
                     }
