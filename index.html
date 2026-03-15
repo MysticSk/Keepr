@@ -748,18 +748,27 @@
             if (mediaUrls.length === 0) return;
 
             const url = mediaUrls[mediaIndex];
+            if (!url) return;
             const container = document.getElementById('media-modal-content');
             let html = '';
 
-            const ytRegExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=|\/shorts\/|\/live\/)([^#\&\?]*).*/;
-            const ytMatch = url.match(ytRegExp);
+            // Security check: Skip heavy Regex parsing on massive base64 image strings
+            const isDataUrl = url.startsWith('data:');
+
+            const ytRegExp = /(youtu\.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=|\/shorts\/|\/live\/)([^#\&\?]*)/;
+            const ytMatch = isDataUrl ? null : url.match(ytRegExp);
+            
             const fbRegExp = /(?:facebook\.com.*(?:\/videos\/|\/posts\/|\/p\/|\/photos\/|\/photo\/|\/photo\.php|\/story\.php|\/reel\/|\/permalink\.php|\/permalink\/|\/watch\/)|fb\.watch\/)/i;
+            const isFb = isDataUrl ? false : url.match(fbRegExp);
+
             const spotifyRegExp = /open\.spotify\.com\/(track|album|playlist|episode|show)\/([a-zA-Z0-9]+)/i;
-            const spotifyMatch = url.match(spotifyRegExp);
+            const spotifyMatch = isDataUrl ? null : url.match(spotifyRegExp);
+            
             const appleMusicRegExp = /music\.apple\.com\/(?:[a-zA-Z]{2}\/)?(album|playlist|song|station)/i;
-            const appleMusicMatch = url.match(appleMusicRegExp);
+            const appleMusicMatch = isDataUrl ? null : url.match(appleMusicRegExp);
+            
             const xRegExp = /(?:twitter\.com|x\.com)\/\w+\/status\/(\d+)/i;
-            const xMatch = url.match(xRegExp);
+            const xMatch = isDataUrl ? null : url.match(xRegExp);
 
             if (ytMatch && ytMatch[2].length === 11) {
                 let videoId = ytMatch[2];
@@ -782,7 +791,7 @@
                  const tweetId = xMatch[1];
                  const theme = document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
                  html = `<div class="bg-white rounded-none sm:rounded-2xl overflow-hidden w-full max-w-2xl h-full max-h-[85vh] shadow-2xl"><iframe class="w-full h-full" src="https://platform.twitter.com/embed/Tweet.html?id=${tweetId}&theme=${theme}" style="border:none;" scrolling="yes" frameborder="0" allowfullscreen="true"></iframe></div>`;
-            } else if (url.match(fbRegExp)) {
+            } else if (isFb) {
                  const isFbVideo = url.includes('/videos/') || url.includes('fb.watch/') || url.includes('/reel/') || url.includes('/watch/');
                  const fbPlugin = isFbVideo ? 'video.php' : 'post.php';
                  const showText = isFbVideo ? 'false' : 'true';
@@ -796,6 +805,23 @@
                  html = `<iframe class="w-full h-full max-w-5xl max-h-[90vh] bg-white rounded-none sm:rounded-2xl shadow-2xl" src="${url}" frameborder="0"></iframe>`;
             } else {
                  html = `<img src="${url}" alt="Enlarged Media" class="max-w-full max-h-[85vh] object-contain rounded-none sm:rounded-2xl shadow-2xl">`;
+            }
+
+            // Add Navigation Controls for Multiple Media
+            if (mediaUrls.length > 1) {
+                if (mediaIndex > 0) {
+                    html += `<button onclick="event.stopPropagation(); window.openMediaModal(${item.id}, ${mediaIndex - 1})" class="absolute left-2 sm:left-6 top-1/2 -translate-y-1/2 bg-black/60 text-white p-3 sm:p-4 rounded-full hover:bg-accent transition-colors z-[110] backdrop-blur-md shadow-2xl border border-white/20">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" /></svg>
+                    </button>`;
+                }
+                if (mediaIndex < mediaUrls.length - 1) {
+                    html += `<button onclick="event.stopPropagation(); window.openMediaModal(${item.id}, ${mediaIndex + 1})" class="absolute right-2 sm:right-6 top-1/2 -translate-y-1/2 bg-black/60 text-white p-3 sm:p-4 rounded-full hover:bg-accent transition-colors z-[110] backdrop-blur-md shadow-2xl border border-white/20">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" /></svg>
+                    </button>`;
+                }
+                html += `<div class="absolute bottom-6 left-1/2 -translate-x-1/2 bg-black/60 text-white px-4 py-2 rounded-full text-xs font-bold tracking-widest z-[110] backdrop-blur-md border border-white/20 shadow-xl pointer-events-none">
+                    ${mediaIndex + 1} / ${mediaUrls.length}
+                </div>`;
             }
 
             container.innerHTML = html;
@@ -860,7 +886,7 @@
                     initLocalStorageMode();
                 }
             } catch (error) {
-                console.error("Init failed:", error);
+                console.warn("Cloud sync unavailable, defaulting to local storage:", error.message);
                 initLocalStorageMode();
             }
         }
@@ -897,7 +923,12 @@
 
             const initAuth = async () => {
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
+                    try {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } catch (e) {
+                        console.warn("Custom auth failed, falling back to anonymous.", e.message);
+                        await signInAnonymously(auth);
+                    }
                 } else {
                     await signInAnonymously(auth);
                 }
@@ -1061,6 +1092,7 @@
 
         // --- Helper Function: Generate HTML for a specific media item ---
         window.generateMediaHtml = function(url, item, mediaIndex, totalMediaCount) {
+            if (!url) return '';
             const isGaming = document.documentElement.getAttribute('data-theme') === 'gaming';
             const isSensitive = item.isSensitive || false;
             const blurClass = isSensitive ? `blur-md hover:blur-none transition-all duration-300 cursor-pointer select-none bg-surface` : '';
@@ -1070,15 +1102,23 @@
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
             </button>`;
 
-            const ytRegExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=|\/shorts\/|\/live\/)([^#\&\?]*).*/;
-            const ytMatch = url.match(ytRegExp);
+            // Security check: Skip heavy Regex parsing on massive base64 image strings
+            const isDataUrl = url.startsWith('data:');
+
+            const ytRegExp = /(youtu\.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=|\/shorts\/|\/live\/)([^#\&\?]*)/;
+            const ytMatch = isDataUrl ? null : url.match(ytRegExp);
+            
             const fbRegExp = /(?:facebook\.com.*(?:\/videos\/|\/posts\/|\/p\/|\/photos\/|\/photo\/|\/photo\.php|\/story\.php|\/reel\/|\/permalink\.php|\/permalink\/|\/watch\/)|fb\.watch\/)/i;
+            const isFb = isDataUrl ? false : url.match(fbRegExp);
+
             const spotifyRegExp = /open\.spotify\.com\/(track|album|playlist|episode|show)\/([a-zA-Z0-9]+)/i;
-            const spotifyMatch = url.match(spotifyRegExp);
+            const spotifyMatch = isDataUrl ? null : url.match(spotifyRegExp);
+            
             const appleMusicRegExp = /music\.apple\.com\/(?:[a-zA-Z]{2}\/)?(album|playlist|song|station)/i;
-            const appleMusicMatch = url.match(appleMusicRegExp);
+            const appleMusicMatch = isDataUrl ? null : url.match(appleMusicRegExp);
+            
             const xRegExp = /(?:twitter\.com|x\.com)\/\w+\/status\/(\d+)/i;
-            const xMatch = url.match(xRegExp);
+            const xMatch = isDataUrl ? null : url.match(xRegExp);
 
             const slideClass = totalMediaCount > 1 ? "min-w-full snap-center" : "w-full";
 
@@ -1146,7 +1186,7 @@
                         X Post
                     </a>
                 </div>`;
-            } else if (url.match(fbRegExp)) {
+            } else if (isFb) {
                 const isFbVideo = url.includes('/videos/') || url.includes('fb.watch/') || url.includes('/reel/') || url.includes('/watch/');
                 const fbPlugin = isFbVideo ? 'video.php' : 'post.php';
                 let cleanUrl = url;
@@ -1397,9 +1437,9 @@
                 let previewHtml = '';
                 if (url.startsWith('data:application/pdf') || url.toLowerCase().includes('.pdf')) {
                     previewHtml = `<span class="text-3xl drop-shadow-sm">📄</span>`;
-                } else if (url.match(/youtu\.be|youtube\.com|spotify\.com|apple\.com|twitter\.com|facebook\.com/)) {
+                } else if (!url.startsWith('data:') && url.match(/youtu\.be|youtube\.com|spotify\.com|apple\.com|twitter\.com|facebook\.com/)) {
                     previewHtml = `<span class="text-3xl drop-shadow-sm">🔗</span>`;
-                } else if (url.match(/\.(mp4|webm|ogg)$/i) || url.includes('data:video/')) {
+                } else if (url.match(/\.(mp4|webm|ogg)$/i) || url.startsWith('data:video/')) {
                     previewHtml = `<span class="text-3xl drop-shadow-sm">🎥</span>`;
                 } else {
                     previewHtml = `<img src="${url}" class="w-full h-full object-cover">`;
