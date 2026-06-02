@@ -35,6 +35,9 @@
     <!-- Fonts for all themes -->
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Nunito:wght@400;600;700;900&family=VT323&display=swap" rel="stylesheet">
     
+    <!-- Confetti Library -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
     <style>
         /* Base Theme Variables */
         :root, [data-theme="light"] {
@@ -96,6 +99,12 @@
         /* Hide scrollbar for swipe galleries */
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Custom Scrollbar for Notes */
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--border-main); border-radius: 4px; }
+        .custom-scrollbar:hover::-webkit-scrollbar-thumb { background: var(--text-muted); }
 
         /* Shared Components */
         .glass-header {
@@ -163,12 +172,6 @@
         @media (min-width: 768px) {
             .search-expand { width: 200px; }
             .search-expand:focus { width: 300px; }
-        }
-
-        /* Checkbox styling */
-        .goal-checkbox:checked + label {
-            text-decoration: line-through;
-            opacity: 0.5;
         }
     </style>
     <script>
@@ -248,7 +251,7 @@
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                 </svg>
-                <span id="btn-new-collection-text">Create Collection</span>
+                <span id="btn-new-collection-text">Create Space</span>
             </button>
         </div>
     </aside>
@@ -292,7 +295,7 @@
                 <!-- Daily Tracker Button -->
                 <button onclick="window.toggleGoalsDrawer()" class="text-textMuted hover:text-accent p-2 sm:p-2.5 bg-card rounded-xl border border-borderMain shadow-sm transition-all active:scale-95 flex items-center justify-center relative" title="Daily Tracker & Goals">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                 </button>
 
@@ -371,38 +374,84 @@
                 </p>
             </div>
 
-            <!-- Daily Goals Checklist -->
-            <div>
-                <h3 class="text-sm font-bold text-textMain mb-3 uppercase tracking-wider flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
-                    Daily Goals
+            <!-- NEW ADVANCED TIMER SETUP FORM -->
+            <div id="tracker-setup" class="bg-card p-5 rounded-2xl border border-borderMain shadow-sm">
+                <h3 class="text-sm font-bold text-textMain mb-4 uppercase tracking-wider flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    Set Focus Goal
                 </h3>
-                <form onsubmit="window.handleAddGoal(event)" class="flex gap-2 mb-5">
-                    <input type="text" id="goal-input" placeholder="Set a new daily goal..." class="flex-1 bg-card border border-borderMain rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-accent outline-none text-textMain shadow-inner font-medium" required>
-                    <button type="submit" class="bg-accent text-white px-5 py-3 rounded-xl font-bold text-sm shadow-md hover:opacity-90 transition-all transform active:scale-95">Add Goal</button>
-                </form>
-                
-                <div id="active-goals-list" class="space-y-2.5">
-                    <!-- Active Goals will be injected here -->
-                </div>
-                
-                <div id="goals-empty" class="text-center py-6 hidden">
-                    <p class="text-sm text-textMuted font-bold">No active goals set yet.</p>
-                </div>
-
-                <!-- Archive Section -->
-                <div class="mt-6 border-t border-borderMain pt-4">
-                    <button onclick="window.toggleArchive()" id="toggle-archive-btn" class="w-full flex items-center justify-between text-sm font-bold text-textMuted hover:text-textMain transition-colors p-2 rounded-xl hover:bg-black/5 -ml-2 pr-2">
-                        <span id="archive-count-text">Archived Goals (0)</span>
-                        <svg id="archive-chevron" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 transform transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
-                    </button>
-                    <div id="archived-goals-container" class="hidden mt-3">
-                        <div id="archived-goals-list" class="space-y-2.5">
-                            <!-- Archived goals will be injected here -->
+                <div class="flex flex-col gap-4">
+                    <input type="text" id="goal-name" placeholder="e.g., Read 20 pages..." class="w-full px-4 py-2.5 bg-surface border border-borderMain text-textMain rounded-xl text-sm focus:ring-2 focus:ring-accent outline-none font-medium shadow-inner">
+                    <div class="flex gap-2">
+                        <div class="flex-1">
+                            <label class="block text-[10px] font-bold uppercase tracking-wider text-textMuted mb-1.5 text-center">HR</label>
+                            <input type="number" id="goal-hrs" value="0" min="0" max="99" class="w-full px-2 py-2.5 bg-surface border border-borderMain text-textMain rounded-xl text-sm focus:ring-2 focus:ring-accent outline-none font-bold text-center shadow-inner">
                         </div>
+                        <div class="flex-1">
+                            <label class="block text-[10px] font-bold uppercase tracking-wider text-textMuted mb-1.5 text-center">MIN</label>
+                            <input type="number" id="goal-mins" value="25" min="0" max="59" class="w-full px-2 py-2.5 bg-surface border border-borderMain text-textMain rounded-xl text-sm focus:ring-2 focus:ring-accent outline-none font-bold text-center shadow-inner">
+                        </div>
+                        <div class="flex-1">
+                            <label class="block text-[10px] font-bold uppercase tracking-wider text-textMuted mb-1.5 text-center">SEC</label>
+                            <input type="number" id="goal-secs" value="0" min="0" max="59" class="w-full px-2 py-2.5 bg-surface border border-borderMain text-textMain rounded-xl text-sm focus:ring-2 focus:ring-accent outline-none font-bold text-center shadow-inner">
+                        </div>
+                    </div>
+                    <div class="flex gap-3 items-end mt-1">
+                        <div class="flex-1">
+                            <label class="block text-[10px] font-bold uppercase tracking-wider text-textMuted mb-1.5 ml-1">Alarm Tone</label>
+                            <select id="goal-alarm" class="w-full px-3 py-2.5 bg-surface border border-borderMain text-textMain rounded-xl text-sm focus:ring-2 focus:ring-accent outline-none font-bold cursor-pointer shadow-inner">
+                                <option value="bell">⏰ Digital Alarm</option>
+                                <option value="chime">🔔 Soft Chime</option>
+                                <option value="retro">🕹️ Retro Beep</option>
+                            </select>
+                        </div>
+                        <button onclick="window.addTimerGoal()" class="bg-accent hover:opacity-90 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-md transform active:scale-95 transition-all">Add to Queue</button>
                     </div>
                 </div>
             </div>
+
+            <!-- ACTIVE TIMER DISPLAY (Hidden by default) -->
+            <div id="tracker-active" class="hidden flex-col items-center py-6 border border-accent/30 rounded-2xl bg-accent/5 relative overflow-hidden shadow-inner">
+                <div class="absolute top-0 left-0 w-full h-1.5 bg-black/5"><div id="timer-progress" class="h-full bg-accent w-0 transition-all duration-1000 linear"></div></div>
+                <h4 id="active-goal-name" class="text-xl font-bold text-textMain mb-2 tracking-wide text-center px-4">Goal Name</h4>
+                <p class="text-[10px] text-accent font-bold uppercase tracking-widest mb-3">Time Remaining</p>
+                <div id="countdown-display" class="text-6xl font-display font-black tracking-widest text-textMain mb-6 drop-shadow-sm font-mono">00:00:00</div>
+                <div class="flex gap-3">
+                    <button onclick="window.toggleTimerPause()" id="btn-goal-pause" class="px-6 py-2.5 bg-surface border border-borderMain hover:border-accent text-textMain rounded-xl font-bold text-sm transition-all shadow-sm">Pause</button>
+                    <button onclick="window.stopTimerGoal()" class="px-6 py-2.5 bg-danger/10 text-danger hover:bg-danger hover:text-white rounded-xl font-bold text-sm transition-all shadow-sm">Stop Timer</button>
+                </div>
+            </div>
+
+            <!-- GOALS QUEUE -->
+            <div>
+                <h4 class="text-xs font-bold uppercase tracking-wider text-textMuted mb-3 flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-accent"></div> Your Queue</h4>
+                <div id="active-goals-list" class="space-y-2.5 max-h-48 overflow-y-auto pr-2 hide-scrollbar">
+                    <!-- Queue Injected Here -->
+                </div>
+                <div id="goals-empty" class="text-center py-4 bg-card rounded-xl border border-borderMain hidden">
+                    <p class="text-xs text-textMuted font-bold">No goals in queue.</p>
+                </div>
+            </div>
+
+            <!-- MINIMIZABLE ARCHIVE SECTION -->
+            <div class="mt-2 border-t border-borderMain pt-5">
+                <button onclick="window.toggleArchive()" class="w-full flex items-center justify-between text-sm font-bold text-textMuted hover:text-textMain transition-colors p-3 rounded-xl hover:bg-black/5 bg-surface border border-transparent hover:border-borderMain shadow-sm">
+                    <span class="flex items-center gap-2">
+                        <div class="w-2 h-2 rounded-full bg-green-500"></div> 
+                        <span id="archive-count-text">Archived Goals (0)</span>
+                    </span>
+                    <div class="flex items-center gap-3">
+                        <span onclick="window.clearTimerArchives(event)" class="text-[10px] text-danger hover:underline px-2 py-1 rounded hover:bg-danger/10">Clear</span>
+                        <svg id="archive-chevron" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 transform transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                    </div>
+                </button>
+                <div id="archived-goals-container" class="hidden mt-3">
+                    <div id="archived-goals-list" class="space-y-2 max-h-48 overflow-y-auto pr-2 hide-scrollbar">
+                        <!-- Archived goals will be injected here -->
+                    </div>
+                </div>
+            </div>
+            
         </div>
     </div>
 
@@ -449,7 +498,6 @@
                                     <textarea id="input-desc" rows="3" class="w-full px-4 py-3.5 bg-surface border border-borderMain rounded-2xl focus:ring-2 focus:ring-accent/50 focus:border-accent text-textMain outline-none transition-all placeholder-textMuted font-medium resize-none shadow-inner"></textarea>
                                 </div>
                                 <div class="flex flex-col gap-3">
-                                    <!-- Stealth Mode Checkbox -->
                                     <div class="flex items-center gap-3 bg-surface p-4 rounded-2xl border border-borderMain hover:border-accent/30 transition-colors shadow-sm cursor-pointer" onclick="document.getElementById('input-sensitive').click()">
                                         <input type="checkbox" id="input-sensitive" class="w-5 h-5 rounded text-accent focus:ring-accent border-borderMain cursor-pointer" onclick="event.stopPropagation()">
                                         <div class="flex flex-col">
@@ -457,7 +505,6 @@
                                             <span class="text-xs text-textMuted font-medium">Blur content until clicked (passwords/pins)</span>
                                         </div>
                                     </div>
-                                    <!-- Loop Video Checkbox -->
                                     <div class="flex items-center gap-3 bg-surface p-4 rounded-2xl border border-borderMain hover:border-accent/30 transition-colors shadow-sm cursor-pointer" onclick="document.getElementById('input-loop').click()">
                                         <input type="checkbox" id="input-loop" class="w-5 h-5 rounded text-accent focus:ring-accent border-borderMain cursor-pointer" onclick="event.stopPropagation()">
                                         <div class="flex flex-col">
@@ -526,7 +573,7 @@
             sections: [
                 { id: 'default', title: 'My Space', icon: 'folder', items: [] }
             ],
-            tracker: { streak: 0, lastDate: '', goals: [] }
+            tracker: { streak: 0, lastDate: '', todayCount: 0, lostCount: 0, goals: [], archivedGoals: [] }
         };
 
         const LOCAL_STORAGE_KEY = 'pocket_peace_data_v1';
@@ -542,6 +589,20 @@
         // --- Multiple Media State ---
         let draggedItemId = null;
         let currentMediaList = [];
+        let currentBase64Image = '';
+
+        // --- Advanced Timer Global Vars ---
+        let goalInterval;
+        let goalTotalSeconds = 0;
+        let goalSecondsLeft = 0;
+        let isGoalPaused = false;
+        let activeGoalId = null;
+
+        const alarmSounds = {
+            bell: new Audio('https://assets.mixkit.co/active_storage/sfx/995/995-preview.mp3'),
+            chime: new Audio('https://assets.mixkit.co/active_storage/sfx/2870/2870-preview.mp3'),
+            retro: new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3')
+        };
 
         // --- DOM Elements ---
         const els = {
@@ -582,145 +643,6 @@
             streakCounter: document.getElementById('streak-counter')
         };
 
-        // --- Live Clock Logic ---
-        setInterval(() => {
-            const now = new Date();
-            const timeEl = document.getElementById('live-time');
-            const dateEl = document.getElementById('live-date');
-            if(timeEl) timeEl.innerText = now.toLocaleTimeString('en-US', { hour12: false });
-            if(dateEl) dateEl.innerText = now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
-        }, 1000);
-
-        // --- Daily Tracker / Streak Logic ---
-        function initializeTracker() {
-            if (!state.tracker) state.tracker = { streak: 0, lastDate: '', goals: [] };
-            
-            const today = new Date().toDateString();
-            const lastDate = state.tracker.lastDate;
-
-            if (lastDate !== today) {
-                if (lastDate) {
-                    const yesterday = new Date();
-                    yesterday.setDate(yesterday.getDate() - 1);
-                    if (lastDate === yesterday.toDateString()) {
-                        // Logged in yesterday, increment streak
-                        state.tracker.streak += 1;
-                    } else {
-                        // Missed a day, reset
-                        state.tracker.streak = 1;
-                    }
-                } else {
-                    // First time
-                    state.tracker.streak = 1;
-                }
-                state.tracker.lastDate = today;
-                saveData(); // Save the new streak
-            }
-            renderGoals();
-        }
-
-        window.toggleGoalsDrawer = function() {
-            if (els.goalsDrawer) els.goalsDrawer.classList.toggle('translate-x-full');
-            if (els.goalsOverlay) els.goalsOverlay.classList.toggle('hidden');
-        };
-
-        window.handleAddGoal = function(e) {
-            e.preventDefault();
-            const input = document.getElementById('goal-input');
-            const text = input.value.trim();
-            if (!text) return;
-
-            const newGoal = { id: Date.now(), text: text, completed: false };
-            state.tracker.goals.push(newGoal);
-            input.value = '';
-            
-            saveData();
-            renderGoals();
-        };
-
-        window.toggleGoal = function(id) {
-            const goal = state.tracker.goals.find(g => g.id === id);
-            if (goal) {
-                goal.completed = !goal.completed;
-                saveData();
-                renderGoals();
-            }
-        };
-
-        window.deleteGoal = function(id) {
-            state.tracker.goals = state.tracker.goals.filter(g => g.id !== id);
-            saveData();
-            renderGoals();
-        };
-
-        let showArchived = false;
-
-        window.toggleArchive = function() {
-            showArchived = !showArchived;
-            renderGoals();
-        };
-
-        function renderGoals() {
-            if (els.streakCounter) {
-                els.streakCounter.innerText = `${state.tracker.streak} Day${state.tracker.streak !== 1 ? 's' : ''} Streak`;
-            }
-
-            if (!els.activeGoalsList) return;
-            els.activeGoalsList.innerHTML = '';
-            if (els.archivedGoalsList) els.archivedGoalsList.innerHTML = '';
-            
-            const activeGoals = (state.tracker.goals || []).filter(g => !g.completed);
-            const archivedGoals = (state.tracker.goals || []).filter(g => g.completed);
-            
-            if (activeGoals.length === 0) {
-                els.activeGoalsList.classList.add('hidden');
-                els.goalsEmpty.classList.remove('hidden');
-            } else {
-                els.activeGoalsList.classList.remove('hidden');
-                els.goalsEmpty.classList.add('hidden');
-
-                activeGoals.forEach(goal => {
-                    const div = document.createElement('div');
-                    div.className = `flex items-center gap-3 p-3 rounded-xl border bg-card border-borderMain shadow-sm transition-all`;
-                    
-                    div.innerHTML = `
-                        <input type="checkbox" id="goal-${goal.id}" class="goal-checkbox w-5 h-5 rounded text-accent focus:ring-accent border-borderMain cursor-pointer" onchange="window.toggleGoal(${goal.id})">
-                        <label for="goal-${goal.id}" class="flex-1 text-sm font-semibold text-textMain cursor-pointer select-none transition-all">${goal.text}</label>
-                        <button onclick="window.deleteGoal(${goal.id})" class="text-textMuted hover:text-danger p-1.5 rounded-lg hover:bg-danger/10 transition-colors" title="Delete Goal">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                        </button>
-                    `;
-                    els.activeGoalsList.appendChild(div);
-                });
-            }
-
-            if (els.archivedGoalsContainer) {
-                document.getElementById('archive-count-text').innerText = `Archived Goals (${archivedGoals.length})`;
-                if (showArchived) {
-                    els.archivedGoalsContainer.classList.remove('hidden');
-                    els.archiveChevron.classList.add('rotate-180');
-                } else {
-                    els.archivedGoalsContainer.classList.add('hidden');
-                    els.archiveChevron.classList.remove('rotate-180');
-                }
-
-                archivedGoals.forEach(goal => {
-                    const div = document.createElement('div');
-                    div.className = `flex items-center gap-3 p-3 rounded-xl border bg-surface/50 border-borderMain/50 transition-all opacity-60 hover:opacity-100`;
-                    
-                    div.innerHTML = `
-                        <input type="checkbox" id="goal-${goal.id}" class="goal-checkbox w-5 h-5 rounded text-accent focus:ring-accent border-borderMain cursor-pointer" checked onchange="window.toggleGoal(${goal.id})">
-                        <label for="goal-${goal.id}" class="flex-1 text-sm font-semibold text-textMuted line-through cursor-pointer select-none transition-all">${goal.text}</label>
-                        <button onclick="window.deleteGoal(${goal.id})" class="text-textMuted hover:text-danger p-1.5 rounded-lg hover:bg-danger/10 transition-colors" title="Delete Goal">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                        </button>
-                    `;
-                    els.archivedGoalsList.appendChild(div);
-                });
-            }
-        }
-
-
         // --- Custom Confirm Modal Logic ---
         let pendingConfirmAction = null;
 
@@ -741,97 +663,14 @@
             window.closeConfirmModal();
         };
 
-        // --- Enlarged Media Modal Logic ---
-        window.openMediaModal = function(itemId, mediaIndex = 0) {
-            const item = getActiveSection().items.find(i => i.id === itemId);
-            const mediaUrls = item.mediaUrls || (item.imageUrl ? [item.imageUrl] : []);
-            if (mediaUrls.length === 0) return;
-
-            const url = mediaUrls[mediaIndex];
-            if (!url) return;
-            const container = document.getElementById('media-modal-content');
-            let html = '';
-
-            // Security check: Skip heavy Regex parsing on massive base64 image strings
-            const isDataUrl = url.startsWith('data:');
-
-            const ytRegExp = /(youtu\.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=|\/shorts\/|\/live\/)([^#\&\?]*)/;
-            const ytMatch = isDataUrl ? null : url.match(ytRegExp);
-            
-            const fbRegExp = /(?:facebook\.com.*(?:\/videos\/|\/posts\/|\/p\/|\/photos\/|\/photo\/|\/photo\.php|\/story\.php|\/reel\/|\/permalink\.php|\/permalink\/|\/watch\/)|fb\.watch\/)/i;
-            const isFb = isDataUrl ? false : url.match(fbRegExp);
-
-            const spotifyRegExp = /open\.spotify\.com\/(track|album|playlist|episode|show)\/([a-zA-Z0-9]+)/i;
-            const spotifyMatch = isDataUrl ? null : url.match(spotifyRegExp);
-            
-            const appleMusicRegExp = /music\.apple\.com\/(?:[a-zA-Z]{2}\/)?(album|playlist|song|station)/i;
-            const appleMusicMatch = isDataUrl ? null : url.match(appleMusicRegExp);
-            
-            const xRegExp = /(?:twitter\.com|x\.com)\/\w+\/status\/(\d+)/i;
-            const xMatch = isDataUrl ? null : url.match(xRegExp);
-
-            if (ytMatch && ytMatch[2].length === 11) {
-                let videoId = ytMatch[2];
-                const loopParam = item.isLoop ? `&loop=1&playlist=${videoId}` : '';
-                html = `<iframe class="w-full h-full max-w-7xl max-h-[85vh] aspect-video rounded-none sm:rounded-2xl shadow-2xl" src="https://www.youtube-nocookie.com/embed/${videoId}?rel=0&autoplay=1${loopParam}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`;
-            } else if (spotifyMatch) {
-                 const type = spotifyMatch[1];
-                 const id = spotifyMatch[2];
-                 const embedHeight = (type === 'track') ? '152' : '352';
-                 html = `<iframe style="border-radius:16px; max-width: 600px;" src="https://open.spotify.com/embed/${type}/${id}?utm_source=generator&theme=0" width="100%" height="${embedHeight}" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>`;
-            } else if (appleMusicMatch) {
-                 let embedUrl = url;
-                 if (!embedUrl.includes('embed.music.apple.com')) {
-                     embedUrl = embedUrl.replace('music.apple.com', 'embed.music.apple.com');
-                 }
-                 const isTrack = url.includes('?i=') || appleMusicMatch[1] === 'song';
-                 const embedHeight = isTrack ? '175' : '450';
-                 html = `<iframe sandbox="allow-forms allow-popups allow-same-origin allow-scripts allow-storage-access-by-user-activation allow-top-navigation-by-user-activation" allow="autoplay *; encrypted-media *; fullscreen *; clipboard-write" frameborder="0" height="${embedHeight}" style="width:100%;max-width:660px;overflow:hidden;background:transparent;border-radius:16px;" src="${embedUrl}"></iframe>`;
-            } else if (xMatch) {
-                 const tweetId = xMatch[1];
-                 const theme = document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
-                 html = `<div class="bg-white rounded-none sm:rounded-2xl overflow-hidden w-full max-w-2xl h-full max-h-[85vh] shadow-2xl"><iframe class="w-full h-full" src="https://platform.twitter.com/embed/Tweet.html?id=${tweetId}&theme=${theme}" style="border:none;" scrolling="yes" frameborder="0" allowfullscreen="true"></iframe></div>`;
-            } else if (isFb) {
-                 const isFbVideo = url.includes('/videos/') || url.includes('fb.watch/') || url.includes('/reel/') || url.includes('/watch/');
-                 const fbPlugin = isFbVideo ? 'video.php' : 'post.php';
-                 const showText = isFbVideo ? 'false' : 'true';
-                 let cleanUrl = url.split('?')[0];
-                 if (url.includes('photo.php') || url.includes('story.php')) cleanUrl = url;
-                 const encodedUrl = encodeURIComponent(cleanUrl);
-                 html = `<div class="bg-black rounded-none sm:rounded-2xl overflow-hidden w-full max-w-4xl h-full max-h-[85vh] shadow-2xl flex items-center justify-center"><iframe class="w-full h-full" src="https://www.facebook.com/plugins/${fbPlugin}?href=${encodedUrl}&show_text=${showText}&width=800" style="border:none;" scrolling="no" frameborder="0" allowfullscreen="true" allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"></iframe></div>`;
-            } else if (url.match(/\.(mp4|webm|ogg)$/i) || url.includes('data:video/')) {
-                 html = `<video controls autoplay ${item.isLoop ? 'loop' : ''} class="w-full max-h-[85vh] object-contain rounded-none sm:rounded-2xl shadow-2xl bg-black" src="${url}"></video>`;
-            } else if (url.startsWith('data:application/pdf') || url.toLowerCase().endsWith('.pdf')) {
-                 html = `<iframe class="w-full h-full max-w-5xl max-h-[90vh] bg-white rounded-none sm:rounded-2xl shadow-2xl" src="${url}" frameborder="0"></iframe>`;
-            } else {
-                 html = `<img src="${url}" alt="Enlarged Media" class="max-w-full max-h-[85vh] object-contain rounded-none sm:rounded-2xl shadow-2xl">`;
-            }
-
-            // Add Navigation Controls for Multiple Media
-            if (mediaUrls.length > 1) {
-                if (mediaIndex > 0) {
-                    html += `<button onclick="event.stopPropagation(); window.openMediaModal(${item.id}, ${mediaIndex - 1})" class="absolute left-2 sm:left-6 top-1/2 -translate-y-1/2 bg-black/60 text-white p-3 sm:p-4 rounded-full hover:bg-accent transition-colors z-[110] backdrop-blur-md shadow-2xl border border-white/20">
-                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" /></svg>
-                    </button>`;
-                }
-                if (mediaIndex < mediaUrls.length - 1) {
-                    html += `<button onclick="event.stopPropagation(); window.openMediaModal(${item.id}, ${mediaIndex + 1})" class="absolute right-2 sm:right-6 top-1/2 -translate-y-1/2 bg-black/60 text-white p-3 sm:p-4 rounded-full hover:bg-accent transition-colors z-[110] backdrop-blur-md shadow-2xl border border-white/20">
-                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" /></svg>
-                    </button>`;
-                }
-                html += `<div class="absolute bottom-6 left-1/2 -translate-x-1/2 bg-black/60 text-white px-4 py-2 rounded-full text-xs font-bold tracking-widest z-[110] backdrop-blur-md border border-white/20 shadow-xl pointer-events-none">
-                    ${mediaIndex + 1} / ${mediaUrls.length}
-                </div>`;
-            }
-
-            container.innerHTML = html;
-            document.getElementById('media-modal').classList.remove('hidden');
-        };
-
-        window.closeMediaModal = function() {
-            document.getElementById('media-modal').classList.add('hidden');
-            document.getElementById('media-modal-content').innerHTML = '';
-        };
+        // --- Live Clock Logic ---
+        setInterval(() => {
+            const now = new Date();
+            const timeEl = document.getElementById('live-time');
+            const dateEl = document.getElementById('live-date');
+            if(timeEl) timeEl.innerText = now.toLocaleTimeString('en-US', { hour12: false });
+            if(dateEl) dateEl.innerText = now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+        }, 1000);
 
         // --- Theme Switcher Logic ---
         window.setTheme = function(theme) {
@@ -878,24 +717,25 @@
         // --- Initialization Logic ---
         async function initApp() {
             window.setTheme(localStorage.getItem('organizer_theme') || 'light');
+            
+            // Instantly load from local storage to prevent UI freezing
+            initLocalStorageMode();
 
             try {
                 if (typeof __firebase_config !== 'undefined') {
-                    await initFirebase(JSON.parse(__firebase_config));
-                } else {
-                    initLocalStorageMode();
+                    // Try connecting to cloud silently in the background
+                    initFirebase(JSON.parse(__firebase_config));
                 }
             } catch (error) {
-                console.warn("Cloud sync unavailable, defaulting to local storage:", error.message);
-                initLocalStorageMode();
+                console.warn("Cloud sync unavailable:", error.message);
             }
         }
 
         function initLocalStorageMode() {
             isCloudEnabled = false;
-            els.statusDot.className = "h-1.5 w-1.5 rounded-full bg-yellow-400 shadow-[0_0_8px_rgba(250,204,21,0.5)]";
-            els.statusText.innerText = "LOCAL SAVE";
-            els.statusDot.parentElement.title = "Data is saved to this browser only";
+            if(els.statusDot) els.statusDot.className = "h-1.5 w-1.5 rounded-full bg-yellow-400 shadow-[0_0_8px_rgba(250,204,21,0.5)]";
+            if(els.statusText) els.statusText.innerText = "LOCAL SAVE";
+            if(els.statusDot && els.statusDot.parentElement) els.statusDot.parentElement.title = "Data is saved to this browser only";
 
             let saved = localStorage.getItem(LOCAL_STORAGE_KEY);
             if (!saved) {
@@ -913,6 +753,7 @@
                     if (parsed.tracker) state.tracker = parsed.tracker;
                 } catch (e) { console.error("Corrupt local data", e); }
             }
+            
             finishLoading();
         }
 
@@ -938,8 +779,8 @@
                 if (user) {
                     currentUser = user;
                     isCloudEnabled = true;
-                    els.statusDot.className = "h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse shadow-[0_0_8px_rgba(74,222,128,0.5)]";
-                    els.statusText.innerText = "CLOUD SYNC";
+                    if(els.statusDot) els.statusDot.className = "h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse shadow-[0_0_8px_rgba(74,222,128,0.5)]";
+                    if(els.statusText) els.statusText.innerText = "CLOUD SYNC";
                     setupDataListener(user.uid);
                 }
             });
@@ -960,35 +801,57 @@
                         }
                     }
                     if (data.tracker) state.tracker = data.tracker;
+                    
+                    // Update UI quietly with cloud data
+                    initializeTracker();
+                    renderAll();
                 }
-                finishLoading();
             }, (error) => {
-                els.statusDot.className = "h-1.5 w-1.5 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]";
-                els.statusText.innerText = "SYNC ERROR";
-                finishLoading();
+                if(els.statusDot) els.statusDot.className = "h-1.5 w-1.5 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]";
+                if(els.statusText) els.statusText.innerText = "SYNC ERROR";
             });
         }
 
         function finishLoading() {
-            els.loadingOverlay.style.opacity = '0';
-            setTimeout(() => els.loadingOverlay.style.display = 'none', 500);
+            if (els.loadingOverlay) {
+                els.loadingOverlay.style.opacity = '0';
+                setTimeout(() => {
+                    if (els.loadingOverlay) els.loadingOverlay.style.display = 'none';
+                }, 500);
+            }
             initializeTracker();
             renderAll();
         }
 
         async function saveData() {
             const dataToSave = { sections: state.sections, tracker: state.tracker };
-            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(dataToSave));
+            
+            try {
+                localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(dataToSave));
+            } catch (e) {
+                console.error("Storage Error:", e);
+                if (e.name === 'QuotaExceededError' || e.message.includes('quota') || e.message.includes('exceeded')) {
+                    window.showToast("Storage Full! ⚠️ Please delete large images to free up space.", true);
+                    return; // Stop execution if storage is full so we don't crash
+                } else {
+                    window.showToast("Error saving data locally.", true);
+                }
+            }
+
             if (isCloudEnabled && db && currentUser) {
                 const docRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'pocket_peace_data', 'content');
                 try {
                     await setDoc(docRef, dataToSave);
                 } catch (e) {
-                    els.statusDot.className = "h-1.5 w-1.5 rounded-full bg-red-500";
+                    if (els.statusDot) els.statusDot.className = "h-1.5 w-1.5 rounded-full bg-red-500";
+                    if(e.code === 'resource-exhausted' || e.message.includes('large')) {
+                         window.showToast("Cloud Storage limit exceeded! ⚠️", true);
+                    }
                 }
             }
         }
 
+        // --- SECTION AND ITEM MANAGEMENT ---
         function getActiveSection() {
             return state.sections.find(s => s.id === state.activeSectionId) || state.sections[0];
         }
@@ -1002,14 +865,12 @@
             renderAll();
         }
 
-        // --- Explicit Reordering Functions ---
         window.moveSection = function(sectionId, dir) {
             const index = state.sections.findIndex(s => s.id === sectionId);
             if (index < 0) return;
             const newIndex = index + dir;
             if (newIndex < 0 || newIndex >= state.sections.length) return;
             
-            // Swap
             const temp = state.sections[index];
             state.sections[index] = state.sections[newIndex];
             state.sections[newIndex] = temp;
@@ -1025,7 +886,6 @@
             const newIndex = index + dir;
             if (newIndex < 0 || newIndex >= section.items.length) return;
             
-            // Swap
             const temp = section.items[index];
             section.items[index] = section.items[newIndex];
             section.items[newIndex] = temp;
@@ -1045,191 +905,34 @@
             this.classList.add('opacity-40', 'scale-95');
             e.dataTransfer.effectAllowed = 'move';
         }
-
-        function handleDragOver(e) {
-            e.preventDefault(); 
-            e.dataTransfer.dropEffect = 'move';
-            return false;
-        }
-
-        function handleDragEnter(e) {
-            e.preventDefault();
-            this.classList.add('ring-2', 'ring-accent', 'border-transparent', 'shadow-2xl');
-        }
-
-        function handleDragLeave(e) {
-            if (!e.relatedTarget || !this.contains(e.relatedTarget)) {
-                this.classList.remove('ring-2', 'ring-accent', 'border-transparent', 'shadow-2xl');
-            }
-        }
-
+        function handleDragOver(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; return false; }
+        function handleDragEnter(e) { e.preventDefault(); this.classList.add('ring-2', 'ring-accent', 'border-transparent', 'shadow-2xl'); }
+        function handleDragLeave(e) { if (!e.relatedTarget || !this.contains(e.relatedTarget)) this.classList.remove('ring-2', 'ring-accent', 'border-transparent', 'shadow-2xl'); }
         function handleDrop(e) {
             e.stopPropagation();
             this.classList.remove('ring-2', 'ring-accent', 'border-transparent', 'shadow-2xl');
-            
             const dropTargetId = parseInt(this.dataset.id);
             if (draggedItemId && draggedItemId !== dropTargetId) {
                 const section = getActiveSection();
                 const fromIndex = section.items.findIndex(i => i.id === draggedItemId);
                 const toIndex = section.items.findIndex(i => i.id === dropTargetId);
-
                 const [movedItem] = section.items.splice(fromIndex, 1);
                 section.items.splice(toIndex, 0, movedItem);
-
                 saveData();
                 renderAll();
             }
             return false;
         }
-
         function handleDragEnd(e) {
             this.classList.remove('opacity-40', 'scale-95');
-            document.querySelectorAll('.item-card').forEach(card => {
-                card.classList.remove('ring-2', 'ring-accent', 'border-transparent', 'shadow-2xl');
-            });
+            document.querySelectorAll('.item-card').forEach(card => card.classList.remove('ring-2', 'ring-accent', 'border-transparent', 'shadow-2xl'));
             draggedItemId = null;
         }
-
-        // --- Helper Function: Generate HTML for a specific media item ---
-        window.generateMediaHtml = function(url, item, mediaIndex, totalMediaCount) {
-            if (!url) return '';
-            const isGaming = document.documentElement.getAttribute('data-theme') === 'gaming';
-            const isSensitive = item.isSensitive || false;
-            const blurClass = isSensitive ? `blur-md hover:blur-none transition-all duration-300 cursor-pointer select-none bg-surface` : '';
-            const toggleAttr = isSensitive ? 'onclick="if(this.classList.contains(\'blur-md\')){this.classList.remove(\'blur-md\', \'select-none\')}else{this.classList.add(\'blur-md\', \'select-none\')}"' : '';
-            
-            const expandBtnHtml = `<button type="button" onclick="event.stopPropagation(); window.openMediaModal(${item.id}, ${mediaIndex})" class="absolute top-2 left-2 bg-black/80 text-white p-2 rounded-xl hover:bg-accent transition-colors backdrop-blur-md opacity-0 group-hover:opacity-100 z-30 shadow-lg border border-white/20 flex items-center justify-center gap-1.5" title="Enlarge Media">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
-            </button>`;
-
-            // Security check: Skip heavy Regex parsing on massive base64 image strings
-            const isDataUrl = url.startsWith('data:');
-
-            const ytRegExp = /(youtu\.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=|\/shorts\/|\/live\/)([^#\&\?]*)/;
-            const ytMatch = isDataUrl ? null : url.match(ytRegExp);
-            
-            const fbRegExp = /(?:facebook\.com.*(?:\/videos\/|\/posts\/|\/p\/|\/photos\/|\/photo\/|\/photo\.php|\/story\.php|\/reel\/|\/permalink\.php|\/permalink\/|\/watch\/)|fb\.watch\/)/i;
-            const isFb = isDataUrl ? false : url.match(fbRegExp);
-
-            const spotifyRegExp = /open\.spotify\.com\/(track|album|playlist|episode|show)\/([a-zA-Z0-9]+)/i;
-            const spotifyMatch = isDataUrl ? null : url.match(spotifyRegExp);
-            
-            const appleMusicRegExp = /music\.apple\.com\/(?:[a-zA-Z]{2}\/)?(album|playlist|song|station)/i;
-            const appleMusicMatch = isDataUrl ? null : url.match(appleMusicRegExp);
-            
-            const xRegExp = /(?:twitter\.com|x\.com)\/\w+\/status\/(\d+)/i;
-            const xMatch = isDataUrl ? null : url.match(xRegExp);
-
-            const slideClass = totalMediaCount > 1 ? "min-w-full snap-center" : "w-full";
-
-            if (ytMatch && ytMatch[2].length === 11) {
-                let videoId = ytMatch[2];
-                const loopParam = item.isLoop ? `&loop=1&playlist=${videoId}` : '';
-                return `
-                <div class="${slideClass} mb-3 flex flex-col gap-1.5 flex-shrink-0 relative z-10" onmouseenter="this.closest('.item-card').draggable=false" onmouseleave="this.closest('.item-card').draggable=true">
-                    <div class="w-full rounded-2xl overflow-hidden border border-borderMain bg-black/5 aspect-video relative ${blurClass}" ${toggleAttr}>
-                        ${expandBtnHtml}
-                        <iframe class="w-full h-full pointer-events-auto" src="https://www.youtube-nocookie.com/embed/${videoId}?rel=0${loopParam}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
-                    </div>
-                    <div class="flex items-center justify-between mt-0.5">
-                        <a href="${url}" target="_blank" draggable="false" class="text-[11px] text-textMuted hover:text-[#FF0000] flex items-center gap-1 font-bold ml-1 transition-colors w-fit">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="currentColor" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122-2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
-                            YouTube
-                        </a>
-                        ${item.isLoop ? `<span class="text-[10px] text-accent font-bold uppercase flex items-center gap-1"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg> Looping</span>` : ''}
-                    </div>
-                </div>`;
-            } else if (spotifyMatch) {
-                const type = spotifyMatch[1]; 
-                const id = spotifyMatch[2];
-                const embedHeight = (type === 'track') ? '152' : '352'; 
-                return `
-                <div class="${slideClass} mb-3 flex flex-col gap-1.5 flex-shrink-0 relative z-10" onmouseenter="this.closest('.item-card').draggable=false" onmouseleave="this.closest('.item-card').draggable=true">
-                    <div class="w-full rounded-2xl overflow-hidden border border-borderMain bg-black/5 relative ${blurClass}" ${toggleAttr}>
-                        ${expandBtnHtml}
-                        <iframe style="border-radius:16px" src="https://open.spotify.com/embed/${type}/${id}?utm_source=generator&theme=0" width="100%" height="${embedHeight}" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy" class="pointer-events-auto"></iframe>
-                    </div>
-                    <a href="${url}" target="_blank" draggable="false" class="text-[11px] text-textMuted hover:text-[#1DB954] flex items-center gap-1 font-bold ml-1 transition-colors w-fit">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.54.659.3 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15.001 10.62 18.66 12.9c.42.24.601.84.3 1.14zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.6.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
-                        Spotify
-                    </a>
-                </div>`;
-            } else if (appleMusicMatch) {
-                let embedUrl = url;
-                if (!embedUrl.includes('embed.music.apple.com')) {
-                    embedUrl = embedUrl.replace('music.apple.com', 'embed.music.apple.com');
-                }
-                const isTrack = url.includes('?i=') || appleMusicMatch[1] === 'song';
-                const embedHeight = isTrack ? '175' : '450';
-                return `
-                <div class="${slideClass} mb-3 flex flex-col gap-1.5 flex-shrink-0 relative z-10" onmouseenter="this.closest('.item-card').draggable=false" onmouseleave="this.closest('.item-card').draggable=true">
-                    <div class="w-full rounded-2xl overflow-hidden border border-borderMain bg-black/5 relative ${blurClass}" ${toggleAttr}>
-                        ${expandBtnHtml}
-                        <iframe sandbox="allow-forms allow-popups allow-same-origin allow-scripts allow-storage-access-by-user-activation allow-top-navigation-by-user-activation" allow="autoplay *; encrypted-media *; fullscreen *; clipboard-write" frameborder="0" height="${embedHeight}" style="width:100%;max-width:660px;overflow:hidden;background:transparent;border-radius:16px;" src="${embedUrl}" class="pointer-events-auto"></iframe>
-                    </div>
-                    <a href="${url}" target="_blank" draggable="false" class="text-[11px] text-textMuted hover:text-[#FA243C] flex items-center gap-1 font-bold ml-1 transition-colors w-fit">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="currentColor" viewBox="0 0 24 24"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.15 2.95.92 3.78 2.12-3.17 1.82-2.61 5.86.6 7.15-.75 1.56-1.57 3.01-3.03 3.74zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.33 2.35-1.92 4.29-3.74 4.25z"/></svg>
-                        Apple Music
-                    </a>
-                </div>`;
-            } else if (xMatch) {
-                const tweetId = xMatch[1];
-                const theme = document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
-                return `
-                <div class="${slideClass} mb-3 flex flex-col gap-1.5 flex-shrink-0 relative z-10" onmouseenter="this.closest('.item-card').draggable=false" onmouseleave="this.closest('.item-card').draggable=true">
-                    <div class="w-full rounded-2xl overflow-hidden border border-borderMain bg-white h-[450px] flex items-center justify-center relative ${blurClass}" ${toggleAttr}>
-                        ${expandBtnHtml}
-                        <iframe class="w-full h-full pointer-events-auto" src="https://platform.twitter.com/embed/Tweet.html?id=${tweetId}&theme=${theme}" style="border:none;" scrolling="yes" frameborder="0" allowfullscreen="true" allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"></iframe>
-                    </div>
-                    <a href="${url}" target="_blank" draggable="false" class="text-[11px] text-textMuted hover:text-textMain flex items-center gap-1 font-bold ml-1 transition-colors w-fit">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-                        X Post
-                    </a>
-                </div>`;
-            } else if (isFb) {
-                const isFbVideo = url.includes('/videos/') || url.includes('fb.watch/') || url.includes('/reel/') || url.includes('/watch/');
-                const fbPlugin = isFbVideo ? 'video.php' : 'post.php';
-                let cleanUrl = url;
-                if (!cleanUrl.includes('photo.php') && !cleanUrl.includes('story.php')) cleanUrl = cleanUrl.split('?')[0]; 
-                const encodedUrl = encodeURIComponent(cleanUrl);
-                return `
-                <div class="${slideClass} mb-3 flex flex-col gap-1.5 flex-shrink-0 relative z-10" onmouseenter="this.closest('.item-card').draggable=false" onmouseleave="this.closest('.item-card').draggable=true">
-                    <div class="w-full rounded-2xl overflow-hidden border border-borderMain bg-white h-[500px] flex items-center justify-center relative ${blurClass}" ${toggleAttr}>
-                        ${expandBtnHtml}
-                        <iframe class="w-full h-full pointer-events-auto" src="https://www.facebook.com/plugins/${fbPlugin}?href=${encodedUrl}&show_text=true&width=500" style="border:none;" scrolling="yes" frameborder="0" allowfullscreen="true" allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"></iframe>
-                    </div>
-                    <a href="${url}" target="_blank" draggable="false" class="text-[11px] text-textMuted hover:text-accent flex items-center gap-1 font-bold ml-1 transition-colors w-fit">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
-                        Facebook
-                    </a>
-                </div>`;
-            } else if (url.startsWith('data:application/pdf') || url.toLowerCase().endsWith('.pdf')) {
-                return `
-                <div class="${slideClass} mb-3 flex flex-col gap-1.5 flex-shrink-0 relative z-10">
-                    <div class="w-full rounded-2xl overflow-hidden border border-borderMain bg-black/5 aspect-video relative flex flex-col items-center justify-center ${blurClass}" ${toggleAttr}>
-                        ${expandBtnHtml}
-                        <span class="text-4xl mb-2 drop-shadow-md">📄</span>
-                        <span class="text-sm font-bold text-textMain text-center px-4">PDF Document</span>
-                    </div>
-                </div>`;
-            } else if (url.match(/\.(mp4|webm|ogg)$/i) || url.includes('data:video/')) {
-                return `
-                <div class="${slideClass} mb-3 rounded-2xl overflow-hidden flex-shrink-0 relative z-10 border border-borderMain bg-black/5 aspect-video relative ${blurClass}" ${toggleAttr} onmouseenter="this.closest('.item-card').draggable=false" onmouseleave="this.closest('.item-card').draggable=true">
-                    ${expandBtnHtml}
-                    <video controls ${item.isLoop ? 'loop' : ''} class="w-full h-full object-contain bg-black pointer-events-auto" src="${url}"></video>
-                </div>`;
-            } else {
-                return `
-                <div class="${slideClass} mb-3 rounded-2xl overflow-hidden flex-shrink-0 relative z-10 border border-borderMain bg-black/5 flex items-center justify-center relative ${blurClass}" ${toggleAttr}>
-                    ${expandBtnHtml}
-                    <img src="${url}" alt="Memory" class="max-w-full max-h-64 object-contain group-hover:scale-105 transition-transform duration-500">
-                </div>`;
-            }
-        };
 
         function renderAll() {
             renderSidebar();
             renderMain();
+            renderGoals(); // Update goals menu
         }
 
         function renderSidebar() {
@@ -1382,7 +1085,7 @@
                         }
                     }
 
-                    const notesHtml = item.note ? `<div class="text-sm leading-relaxed whitespace-pre-wrap break-words flex-grow relative z-10 font-medium ${cardBlurClass} ${isGaming ? 'text-indigo-200 p-4 rounded-2xl bg-black/20 border border-indigo-500/10 shadow-inner' : 'text-textMuted'}" ${cardToggleAttr} title="${isCardSensitive ? 'Click to reveal' : ''}">${item.note}</div>` : '<div class="flex-grow relative z-10"></div>';
+                    const notesHtml = item.note ? `<div class="text-sm leading-relaxed whitespace-pre-wrap break-words flex-grow relative z-10 font-medium overflow-y-auto max-h-48 custom-scrollbar pr-1 ${cardBlurClass} ${isGaming ? 'text-indigo-200 p-4 rounded-2xl bg-black/20 border border-indigo-500/10 shadow-inner' : 'text-textMuted'}" ${cardToggleAttr} title="${isCardSensitive ? 'Click to reveal' : ''}">${item.note}</div>` : '<div class="flex-grow relative z-10"></div>';
 
                     card.innerHTML = `
                         ${accentHtml}
@@ -1420,6 +1123,534 @@
                 });
             }
         }
+
+        // --- Advanced Goal Timer & Streak Logic ---
+        function initializeTracker() {
+            if (!state.tracker) state.tracker = { streak: 0, lastDate: '', todayCount: 0, lostCount: 0, goals: [], archivedGoals: [] };
+            if (!state.tracker.goals) state.tracker.goals = [];
+            if (!state.tracker.archivedGoals) state.tracker.archivedGoals = [];
+            if (state.tracker.todayCount === undefined) state.tracker.todayCount = 0;
+            if (state.tracker.lostCount === undefined) state.tracker.lostCount = 0;
+
+            const today = new Date().toDateString();
+            const lastDate = state.tracker.lastDate;
+
+            if (lastDate && lastDate !== today) {
+                const yesterday = new Date();
+                yesterday.setDate(yesterday.getDate() - 1);
+
+                if (lastDate !== yesterday.toDateString() && state.tracker.streak > 0) {
+                    state.tracker.lostCount = state.tracker.streak;
+                    state.tracker.streak = 0; 
+                }
+                state.tracker.todayCount = 0;
+                saveData();
+            }
+            activeGoalId = null; 
+            renderGoals();
+        }
+
+        window.toggleGoalsDrawer = function() {
+            if (els.goalsDrawer) els.goalsDrawer.classList.toggle('translate-x-full');
+            if (els.goalsOverlay) els.goalsOverlay.classList.toggle('hidden');
+        };
+
+        window.addTimerGoal = function() {
+            const nameInput = document.getElementById('goal-name');
+            const name = nameInput.value.trim() || 'Focus Session';
+            
+            const hrs = parseInt(document.getElementById('goal-hrs').value) || 0;
+            const mins = parseInt(document.getElementById('goal-mins').value) || 0;
+            const secs = parseInt(document.getElementById('goal-secs').value) || 0;
+            
+            const totalSeconds = (hrs * 3600) + (mins * 60) + secs;
+            const alarm = document.getElementById('goal-alarm').value;
+            
+            if (totalSeconds <= 0) return showToast("Please enter a valid time!", true);
+
+            state.tracker.goals.unshift({
+                id: Date.now(),
+                name: name,
+                totalSeconds: totalSeconds,
+                alarm: alarm,
+                status: 'pending',
+                date: new Date().toLocaleDateString()
+            });
+            
+            nameInput.value = '';
+            document.getElementById('goal-hrs').value = '0';
+            document.getElementById('goal-mins').value = '25';
+            document.getElementById('goal-secs').value = '0';
+            
+            saveData();
+            renderGoals();
+            showToast("Timer Goal added to queue!");
+        };
+
+        window.startTimerGoal = function(id) {
+            if (activeGoalId) return showToast("Finish or stop the running timer first!", true);
+            
+            const goal = state.tracker.goals.find(g => g.id === id);
+            if (!goal) return;
+
+            activeGoalId = id;
+            goalTotalSeconds = goal.totalSeconds;
+            goalSecondsLeft = goalTotalSeconds;
+            isGoalPaused = false;
+
+            document.getElementById('active-goal-name').innerText = goal.name;
+            document.getElementById('tracker-active').classList.remove('hidden');
+            document.getElementById('tracker-active').classList.add('flex');
+            
+            updateTimerDisplay();
+            clearInterval(goalInterval);
+            goalInterval = setInterval(goalTick, 1000);
+            
+            saveData();
+            renderGoals();
+            showToast("Focus Timer started! You got this.");
+        };
+
+        function goalTick() {
+            if (isGoalPaused) return;
+            
+            goalSecondsLeft--;
+            updateTimerDisplay();
+
+            if (goalSecondsLeft <= 0) {
+                clearInterval(goalInterval);
+                const goal = state.tracker.goals.find(g => g.id === activeGoalId);
+                
+                if(goal) {
+                    alarmSounds[goal.alarm].play();
+                    goal.status = 'completed';
+                    goal.completedAt = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                }
+                
+                document.getElementById('countdown-display').innerText = "00:00:00";
+                document.getElementById('countdown-display').classList.add('animate-pulse', 'text-green-500');
+                showToast("Goal Accomplished! 🎉");
+
+                if (typeof confetti === 'function') {
+                    confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 }, zIndex: 10000 });
+                }
+
+                const today = new Date().toDateString();
+                if (state.tracker.lastDate !== today) {
+                    if (state.tracker.streak === 0 && state.tracker.lostCount > 0) {
+                        state.tracker.streak = 1;
+                    } else {
+                        state.tracker.streak++;
+                        state.tracker.lostCount = 0; 
+                    }
+                    state.tracker.lastDate = today;
+                    state.tracker.todayCount = 1;
+                } else {
+                    state.tracker.todayCount++;
+                    if (state.tracker.lostCount > 0 && state.tracker.todayCount >= 2) {
+                        state.tracker.streak = state.tracker.lostCount + 1;
+                        state.tracker.lostCount = 0;
+                        showToast("🔥 EPIC COMEBACK! Streak Restored!");
+                        if (typeof confetti === 'function') confetti({ particleCount: 300, spread: 150, zIndex: 10000 });
+                    }
+                }
+                
+                activeGoalId = null;
+                saveData();
+                renderGoals();
+            }
+        }
+
+        function updateTimerDisplay() {
+            if(goalSecondsLeft < 0) return;
+            const h = Math.floor(goalSecondsLeft / 3600).toString().padStart(2, '0');
+            const m = Math.floor((goalSecondsLeft % 3600) / 60).toString().padStart(2, '0');
+            const s = (goalSecondsLeft % 60).toString().padStart(2, '0');
+            
+            document.getElementById('countdown-display').innerText = `${h}:${m}:${s}`;
+            
+            const percent = ((goalTotalSeconds - goalSecondsLeft) / goalTotalSeconds) * 100;
+            document.getElementById('timer-progress').style.width = `${percent}%`;
+        }
+
+        window.toggleTimerPause = function() {
+            isGoalPaused = !isGoalPaused;
+            const btn = document.getElementById('btn-goal-pause');
+            btn.innerText = isGoalPaused ? "Resume" : "Pause";
+            btn.className = isGoalPaused 
+                ? "px-6 py-2.5 bg-accent text-white rounded-xl font-bold text-sm transition-all shadow-sm" 
+                : "px-6 py-2.5 bg-surface border border-borderMain hover:border-accent text-textMain rounded-xl font-bold text-sm transition-all shadow-sm";
+        };
+
+        window.stopTimerGoal = function() {
+            clearInterval(goalInterval);
+            document.getElementById('tracker-active').classList.add('hidden');
+            document.getElementById('tracker-active').classList.remove('flex');
+            document.getElementById('countdown-display').classList.remove('animate-pulse', 'text-green-500');
+            document.getElementById('timer-progress').style.width = `0%`;
+            
+            Object.values(alarmSounds).forEach(audio => { audio.pause(); audio.currentTime = 0; });
+
+            activeGoalId = null;
+            saveData();
+            renderGoals();
+        };
+
+        window.deleteTimerGoal = function(id) {
+            window.openConfirmModal("Delete Timer", "Remove this timer from your queue?", () => {
+                if (activeGoalId === id) window.stopTimerGoal();
+                state.tracker.goals = state.tracker.goals.filter(g => g.id !== id);
+                saveData();
+                renderGoals();
+            });
+        };
+
+        window.archiveTimerGoal = function(id) {
+            const idx = state.tracker.goals.findIndex(g => g.id === id);
+            if (idx > -1) {
+                const goal = state.tracker.goals.splice(idx, 1)[0];
+                state.tracker.archivedGoals.unshift(goal);
+                saveData();
+                renderGoals();
+                showToast("Moved to your history!");
+            }
+        };
+
+        let showArchived = false;
+        window.toggleArchive = function() {
+            showArchived = !showArchived;
+            renderGoals();
+        };
+
+        window.clearTimerArchives = function(event) {
+            if (event) event.stopPropagation(); 
+            window.openConfirmModal("Clear History", "Delete all archived timers forever?", () => {
+                state.tracker.archivedGoals = [];
+                saveData();
+                renderGoals();
+                showToast('History cleared');
+            });
+        };
+
+        function renderGoals() {
+            if (els.streakCounter) {
+                els.streakCounter.innerText = `${state.tracker.streak} Day${state.tracker.streak !== 1 ? 's' : ''} Streak`;
+            }
+
+            const qContainer = els.activeGoalsList;
+            if (qContainer) {
+                qContainer.innerHTML = '';
+                const activeList = state.tracker.goals || [];
+                
+                if (activeList.length === 0) {
+                    qContainer.classList.add('hidden');
+                    els.goalsEmpty.classList.remove('hidden');
+                } else {
+                    qContainer.classList.remove('hidden');
+                    els.goalsEmpty.classList.add('hidden');
+
+                    activeList.forEach(goal => {
+                        const div = document.createElement('div');
+                        div.className = "flex items-center justify-between p-3.5 bg-card border border-borderMain rounded-xl shadow-sm transition-all";
+
+                        const h = Math.floor(goal.totalSeconds / 3600).toString().padStart(2, '0');
+                        const m = Math.floor((goal.totalSeconds % 3600) / 60).toString().padStart(2, '0');
+                        const s = (goal.totalSeconds % 60).toString().padStart(2, '0');
+                        const timeStr = `${h}:${m}:${s}`;
+                        
+                        const goalName = goal.name || goal.text || "Goal";
+
+                        let actionHtml = '';
+                        let statusHtml = `<span class="text-[10px] text-textMuted font-bold uppercase tracking-wider block mt-1">⏱ ${timeStr}</span>`;
+
+                        if (goal.status === 'completed') {
+                            statusHtml = `<span class="text-[10px] text-green-500 font-bold uppercase tracking-wider block mt-1">✓ Completed</span>`;
+                            actionHtml = `<button onclick="window.archiveTimerGoal(${goal.id})" class="px-3 py-1.5 bg-accent/10 text-accent hover:bg-accent hover:text-white rounded-lg font-bold text-xs transition-colors border border-accent/20">Archive</button>`;
+                        } else if (activeGoalId === goal.id) {
+                            actionHtml = `<span class="px-3 py-1.5 bg-accent text-white rounded-lg font-bold text-xs animate-pulse shadow-md">Running</span>`;
+                        } else {
+                            actionHtml = `<button onclick="window.startTimerGoal(${goal.id})" class="px-3 py-1.5 bg-surface border border-borderMain hover:border-accent hover:text-accent text-textMain rounded-lg font-bold text-xs transition-colors shadow-sm">Start Focus</button>`;
+                        }
+
+                        div.innerHTML = `
+                            <div class="flex flex-col truncate pr-2 w-full max-w-[50%]">
+                                <span class="font-bold text-textMain text-sm truncate">${goalName}</span>
+                                ${statusHtml}
+                            </div>
+                            <div class="flex items-center gap-2 flex-shrink-0">
+                                ${actionHtml}
+                                <button onclick="window.deleteTimerGoal(${goal.id})" class="p-1.5 text-textMuted hover:text-danger hover:bg-danger/10 rounded-lg transition-colors border border-transparent hover:border-danger/20" title="Delete Timer">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                </button>
+                            </div>
+                        `;
+                        qContainer.appendChild(div);
+                    });
+                }
+            }
+
+            if (els.archivedGoalsContainer) {
+                const arcList = state.tracker.archivedGoals || [];
+                document.getElementById('archive-count-text').innerText = `Archived Goals (${arcList.length})`;
+                
+                if (showArchived) {
+                    els.archivedGoalsContainer.classList.remove('hidden');
+                    els.archiveChevron.classList.add('rotate-180');
+                } else {
+                    els.archivedGoalsContainer.classList.add('hidden');
+                    els.archiveChevron.classList.remove('rotate-180');
+                }
+
+                els.archivedGoalsList.innerHTML = '';
+                if (arcList.length === 0) {
+                    els.archivedGoalsList.innerHTML = '<p class="text-xs text-textMuted italic p-3 text-center">No history yet.</p>';
+                } else {
+                    arcList.forEach(goal => {
+                        const div = document.createElement('div');
+                        div.className = "flex flex-col p-3 bg-surface border border-borderMain rounded-xl shadow-sm mb-2 opacity-70 hover:opacity-100 transition-opacity";
+                        
+                        const h = Math.floor(goal.totalSeconds / 3600).toString().padStart(2, '0');
+                        const m = Math.floor((goal.totalSeconds % 3600) / 60).toString().padStart(2, '0');
+                        const s = (goal.totalSeconds % 60).toString().padStart(2, '0');
+                        const timeStr = `${h}:${m}:${s}`;
+                        const goalName = goal.name || goal.text || "Goal";
+
+                        div.innerHTML = `
+                            <span class="font-bold text-textMain text-sm truncate mb-1">${goalName}</span>
+                            <div class="flex gap-4 text-[10px] text-textMuted font-bold uppercase tracking-wider">
+                                <span>⏱ ${timeStr}</span>
+                                <span>📅 ${goal.date}</span>
+                            </div>
+                        `;
+                        els.archivedGoalsList.appendChild(div);
+                    });
+                }
+            }
+        }
+
+        window.generateMediaHtml = function(url, item, mediaIndex, totalMediaCount) {
+            if (!url) return '';
+            const isGaming = document.documentElement.getAttribute('data-theme') === 'gaming';
+            const isSensitive = item.isSensitive || false;
+            const blurClass = isSensitive ? `blur-md hover:blur-none transition-all duration-300 cursor-pointer select-none bg-surface` : '';
+            const toggleAttr = isSensitive ? 'onclick="if(this.classList.contains(\'blur-md\')){this.classList.remove(\'blur-md\', \'select-none\')}else{this.classList.add(\'blur-md\', \'select-none\')}"' : '';
+            
+            const expandBtnHtml = `<button type="button" onclick="event.stopPropagation(); window.openMediaModal(${item.id}, ${mediaIndex})" class="absolute top-2 left-2 bg-black/80 text-white p-2 rounded-xl hover:bg-accent transition-colors backdrop-blur-md opacity-0 group-hover:opacity-100 z-30 shadow-lg border border-white/20 flex items-center justify-center gap-1.5" title="Enlarge Media">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
+            </button>`;
+
+            const isDataUrl = url.startsWith('data:');
+            const ytRegExp = /(youtu\.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=|\/shorts\/|\/live\/)([^#\&\?]*)/;
+            const ytMatch = isDataUrl ? null : url.match(ytRegExp);
+            
+            const fbRegExp = /(?:facebook\.com.*(?:\/videos\/|\/posts\/|\/p\/|\/photos\/|\/photo\/|\/photo\.php|\/story\.php|\/reel\/|\/permalink\.php|\/permalink\/|\/watch\/)|fb\.watch\/)/i;
+            const isFb = isDataUrl ? false : url.match(fbRegExp);
+
+            const spotifyRegExp = /open\.spotify\.com\/(track|album|playlist|episode|show)\/([a-zA-Z0-9]+)/i;
+            const spotifyMatch = isDataUrl ? null : url.match(spotifyRegExp);
+            
+            const appleMusicRegExp = /music\.apple\.com\/(?:[a-zA-Z]{2}\/)?(album|playlist|song|station)/i;
+            const appleMusicMatch = isDataUrl ? null : url.match(appleMusicRegExp);
+            
+            const xRegExp = /(?:twitter\.com|x\.com)\/\w+\/status\/(\d+)/i;
+            const xMatch = isDataUrl ? null : url.match(xRegExp);
+
+            const slideClass = totalMediaCount > 1 ? "min-w-full snap-center" : "w-full";
+
+            if (ytMatch && ytMatch[2].length === 11) {
+                let videoId = ytMatch[2];
+                const loopParam = item.isLoop ? `&loop=1&playlist=${videoId}` : '';
+                return `
+                <div class="${slideClass} mb-3 flex flex-col gap-1.5 flex-shrink-0 relative z-10" onmouseenter="this.closest('.item-card').draggable=false" onmouseleave="this.closest('.item-card').draggable=true">
+                    <div class="w-full rounded-2xl overflow-hidden border border-borderMain bg-black/5 aspect-video relative ${blurClass}" ${toggleAttr}>
+                        ${expandBtnHtml}
+                        <iframe class="w-full h-full pointer-events-auto" src="https://www.youtube-nocookie.com/embed/${videoId}?rel=0${loopParam}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+                    </div>
+                    <div class="flex items-center justify-between mt-0.5">
+                        <a href="${url}" target="_blank" draggable="false" class="text-[11px] text-textMuted hover:text-[#FF0000] flex items-center gap-1 font-bold ml-1 transition-colors w-fit">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="currentColor" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+                            YouTube
+                        </a>
+                        ${item.isLoop ? `<span class="text-[10px] text-accent font-bold uppercase flex items-center gap-1"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg> Looping</span>` : ''}
+                    </div>
+                </div>`;
+            } else if (spotifyMatch) {
+                const type = spotifyMatch[1]; 
+                const id = spotifyMatch[2];
+                const embedHeight = (type === 'track') ? '152' : '352'; 
+                return `
+                <div class="${slideClass} mb-3 flex flex-col gap-1.5 flex-shrink-0 relative z-10" onmouseenter="this.closest('.item-card').draggable=false" onmouseleave="this.closest('.item-card').draggable=true">
+                    <div class="w-full rounded-2xl overflow-hidden border border-borderMain bg-black/5 relative ${blurClass}" ${toggleAttr}>
+                        ${expandBtnHtml}
+                        <iframe style="border-radius:16px" src="https://open.spotify.com/embed/${type}/${id}?utm_source=generator&theme=0" width="100%" height="${embedHeight}" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy" class="pointer-events-auto"></iframe>
+                    </div>
+                    <a href="${url}" target="_blank" draggable="false" class="text-[11px] text-textMuted hover:text-[#1DB954] flex items-center gap-1 font-bold ml-1 transition-colors w-fit">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.54.659.3 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15.001 10.62 18.66 12.9c.42.24.601.84.3 1.14zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.6.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
+                        Spotify
+                    </a>
+                </div>`;
+            } else if (appleMusicMatch) {
+                let embedUrl = url;
+                if (!embedUrl.includes('embed.music.apple.com')) {
+                    embedUrl = embedUrl.replace('music.apple.com', 'embed.music.apple.com');
+                }
+                const isTrack = url.includes('?i=') || appleMusicMatch[1] === 'song';
+                const embedHeight = isTrack ? '175' : '450';
+                return `
+                <div class="${slideClass} mb-3 flex flex-col gap-1.5 flex-shrink-0 relative z-10" onmouseenter="this.closest('.item-card').draggable=false" onmouseleave="this.closest('.item-card').draggable=true">
+                    <div class="w-full rounded-2xl overflow-hidden border border-borderMain bg-black/5 relative ${blurClass}" ${toggleAttr}>
+                        ${expandBtnHtml}
+                        <iframe sandbox="allow-forms allow-popups allow-same-origin allow-scripts allow-storage-access-by-user-activation allow-top-navigation-by-user-activation" allow="autoplay *; encrypted-media *; fullscreen *; clipboard-write" frameborder="0" height="${embedHeight}" style="width:100%;max-width:660px;overflow:hidden;background:transparent;border-radius:16px;" src="${embedUrl}" class="pointer-events-auto"></iframe>
+                    </div>
+                    <a href="${url}" target="_blank" draggable="false" class="text-[11px] text-textMuted hover:text-[#FA243C] flex items-center gap-1 font-bold ml-1 transition-colors w-fit">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="currentColor" viewBox="0 0 24 24"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.15 2.95.92 3.78 2.12-3.17 1.82-2.61 5.86.6 7.15-.75 1.56-1.57 3.01-3.03 3.74zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.33 2.35-1.92 4.29-3.74 4.25z"/></svg>
+                        Apple Music
+                    </a>
+                </div>`;
+            } else if (xMatch) {
+                const tweetId = xMatch[1];
+                const theme = document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+                return `
+                <div class="${slideClass} mb-3 flex flex-col gap-1.5 flex-shrink-0 relative z-10" onmouseenter="this.closest('.item-card').draggable=false" onmouseleave="this.closest('.item-card').draggable=true">
+                    <div class="w-full rounded-2xl overflow-hidden border border-borderMain bg-white h-[450px] flex items-center justify-center relative ${blurClass}" ${toggleAttr}>
+                        ${expandBtnHtml}
+                        <iframe class="w-full h-full pointer-events-auto" src="https://platform.twitter.com/embed/Tweet.html?id=${tweetId}&theme=${theme}" style="border:none;" scrolling="yes" frameborder="0" allowfullscreen="true" allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"></iframe>
+                    </div>
+                    <a href="${url}" target="_blank" draggable="false" class="text-[11px] text-textMuted hover:text-textMain flex items-center gap-1 font-bold ml-1 transition-colors w-fit">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                        X Post
+                    </a>
+                </div>`;
+            } else if (isFb) {
+                const isFbVideo = url.includes('/videos/') || url.includes('fb.watch/') || url.includes('/reel/') || url.includes('/watch/');
+                const fbPlugin = isFbVideo ? 'video.php' : 'post.php';
+                let cleanUrl = url;
+                if (!cleanUrl.includes('photo.php') && !cleanUrl.includes('story.php')) cleanUrl = cleanUrl.split('?')[0]; 
+                const encodedUrl = encodeURIComponent(cleanUrl);
+                return `
+                <div class="${slideClass} mb-3 flex flex-col gap-1.5 flex-shrink-0 relative z-10" onmouseenter="this.closest('.item-card').draggable=false" onmouseleave="this.closest('.item-card').draggable=true">
+                    <div class="w-full rounded-2xl overflow-hidden border border-borderMain bg-white h-[500px] flex items-center justify-center relative ${blurClass}" ${toggleAttr}>
+                        ${expandBtnHtml}
+                        <iframe class="w-full h-full pointer-events-auto" src="https://www.facebook.com/plugins/${fbPlugin}?href=${encodedUrl}&show_text=true&width=500" style="border:none;" scrolling="yes" frameborder="0" allowfullscreen="true" allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"></iframe>
+                    </div>
+                    <a href="${url}" target="_blank" draggable="false" class="text-[11px] text-textMuted hover:text-accent flex items-center gap-1 font-bold ml-1 transition-colors w-fit">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                        Facebook
+                    </a>
+                </div>`;
+            } else if (url.startsWith('data:application/pdf') || url.toLowerCase().endsWith('.pdf')) {
+                return `
+                <div class="${slideClass} mb-3 flex flex-col gap-1.5 flex-shrink-0 relative z-10">
+                    <div class="w-full rounded-2xl overflow-hidden border border-borderMain bg-black/5 aspect-video relative flex flex-col items-center justify-center ${blurClass}" ${toggleAttr}>
+                        ${expandBtnHtml}
+                        <span class="text-4xl mb-2 drop-shadow-md">📄</span>
+                        <span class="text-sm font-bold text-textMain text-center px-4">PDF Document</span>
+                    </div>
+                </div>`;
+            } else if (url.match(/\.(mp4|webm|ogg)$/i) || url.startsWith('data:video/')) {
+                return `
+                <div class="${slideClass} mb-3 rounded-2xl overflow-hidden flex-shrink-0 relative z-10 border border-borderMain bg-black/5 aspect-video relative ${blurClass}" ${toggleAttr} onmouseenter="this.closest('.item-card').draggable=false" onmouseleave="this.closest('.item-card').draggable=true">
+                    ${expandBtnHtml}
+                    <video controls ${item.isLoop ? 'loop' : ''} class="w-full h-full object-contain bg-black pointer-events-auto" src="${url}"></video>
+                </div>`;
+            } else {
+                return `
+                <div class="${slideClass} mb-3 rounded-2xl overflow-hidden flex-shrink-0 relative z-10 border border-borderMain bg-black/5 flex items-center justify-center relative ${blurClass}" ${toggleAttr}>
+                    ${expandBtnHtml}
+                    <img src="${url}" alt="Memory" class="max-w-full max-h-64 object-contain group-hover:scale-105 transition-transform duration-500">
+                </div>`;
+            }
+        };
+
+        // --- Enlarged Media Modal Logic ---
+        window.openMediaModal = function(itemId, mediaIndex = 0) {
+            const item = getActiveSection().items.find(i => i.id === itemId);
+            const mediaUrls = item.mediaUrls || (item.imageUrl ? [item.imageUrl] : []);
+            if (mediaUrls.length === 0) return;
+
+            const url = mediaUrls[mediaIndex];
+            if (!url) return;
+            const container = document.getElementById('media-modal-content');
+            let html = '';
+
+            const isDataUrl = url.startsWith('data:');
+            const ytRegExp = /(youtu\.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=|\/shorts\/|\/live\/)([^#\&\?]*)/;
+            const ytMatch = isDataUrl ? null : url.match(ytRegExp);
+            
+            const fbRegExp = /(?:facebook\.com.*(?:\/videos\/|\/posts\/|\/p\/|\/photos\/|\/photo\/|\/photo\.php|\/story\.php|\/reel\/|\/permalink\.php|\/permalink\/|\/watch\/)|fb\.watch\/)/i;
+            const isFb = isDataUrl ? false : url.match(fbRegExp);
+
+            const spotifyRegExp = /open\.spotify\.com\/(track|album|playlist|episode|show)\/([a-zA-Z0-9]+)/i;
+            const spotifyMatch = isDataUrl ? null : url.match(spotifyRegExp);
+            
+            const appleMusicRegExp = /music\.apple\.com\/(?:[a-zA-Z]{2}\/)?(album|playlist|song|station)/i;
+            const appleMusicMatch = isDataUrl ? null : url.match(appleMusicRegExp);
+            
+            const xRegExp = /(?:twitter\.com|x\.com)\/\w+\/status\/(\d+)/i;
+            const xMatch = isDataUrl ? null : url.match(xRegExp);
+
+            if (ytMatch && ytMatch[2].length === 11) {
+                let videoId = ytMatch[2];
+                const loopParam = item.isLoop ? `&loop=1&playlist=${videoId}` : '';
+                html = `<iframe class="w-full h-full max-w-7xl max-h-[85vh] aspect-video rounded-none sm:rounded-2xl shadow-2xl" src="https://www.youtube-nocookie.com/embed/${videoId}?rel=0&autoplay=1${loopParam}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`;
+            } else if (spotifyMatch) {
+                 const type = spotifyMatch[1];
+                 const id = spotifyMatch[2];
+                 const embedHeight = (type === 'track') ? '152' : '352';
+                 html = `<iframe style="border-radius:16px; max-width: 600px;" src="https://open.spotify.com/embed/${type}/${id}?utm_source=generator&theme=0" width="100%" height="${embedHeight}" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>`;
+            } else if (appleMusicMatch) {
+                 let embedUrl = url;
+                 if (!embedUrl.includes('embed.music.apple.com')) {
+                     embedUrl = embedUrl.replace('music.apple.com', 'embed.music.apple.com');
+                 }
+                 const isTrack = url.includes('?i=') || appleMusicMatch[1] === 'song';
+                 const embedHeight = isTrack ? '175' : '450';
+                 html = `<iframe sandbox="allow-forms allow-popups allow-same-origin allow-scripts allow-storage-access-by-user-activation allow-top-navigation-by-user-activation" allow="autoplay *; encrypted-media *; fullscreen *; clipboard-write" frameborder="0" height="${embedHeight}" style="width:100%;max-width:660px;overflow:hidden;background:transparent;border-radius:16px;" src="${embedUrl}"></iframe>`;
+            } else if (xMatch) {
+                 const tweetId = xMatch[1];
+                 const theme = document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+                 html = `<div class="bg-white rounded-none sm:rounded-2xl overflow-hidden w-full max-w-2xl h-full max-h-[85vh] shadow-2xl"><iframe class="w-full h-full" src="https://platform.twitter.com/embed/Tweet.html?id=${tweetId}&theme=${theme}" style="border:none;" scrolling="yes" frameborder="0" allowfullscreen="true"></iframe></div>`;
+            } else if (isFb) {
+                 const isFbVideo = url.includes('/videos/') || url.includes('fb.watch/') || url.includes('/reel/') || url.includes('/watch/');
+                 const fbPlugin = isFbVideo ? 'video.php' : 'post.php';
+                 const showText = isFbVideo ? 'false' : 'true';
+                 let cleanUrl = url.split('?')[0];
+                 if (url.includes('photo.php') || url.includes('story.php')) cleanUrl = url;
+                 const encodedUrl = encodeURIComponent(cleanUrl);
+                 html = `<div class="bg-black rounded-none sm:rounded-2xl overflow-hidden w-full max-w-4xl h-full max-h-[85vh] shadow-2xl flex items-center justify-center"><iframe class="w-full h-full" src="https://www.facebook.com/plugins/${fbPlugin}?href=${encodedUrl}&show_text=${showText}&width=800" style="border:none;" scrolling="no" frameborder="0" allowfullscreen="true" allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"></iframe></div>`;
+            } else if (url.match(/\.(mp4|webm|ogg)$/i) || url.includes('data:video/')) {
+                 html = `<video controls autoplay ${item.isLoop ? 'loop' : ''} class="w-full max-h-[85vh] object-contain rounded-none sm:rounded-2xl shadow-2xl bg-black" src="${url}"></video>`;
+            } else if (url.startsWith('data:application/pdf') || url.toLowerCase().endsWith('.pdf')) {
+                 html = `<iframe class="w-full h-full max-w-7xl max-h-[90vh] bg-white rounded-none sm:rounded-2xl shadow-2xl" src="${url}" frameborder="0"></iframe>`;
+            } else {
+                 html = `<img src="${url}" alt="Enlarged Media" class="max-w-full max-h-[85vh] object-contain rounded-none sm:rounded-2xl shadow-2xl">`;
+            }
+
+            // Add Navigation Controls for Multiple Media
+            if (mediaUrls.length > 1) {
+                if (mediaIndex > 0) {
+                    html += `<button onclick="event.stopPropagation(); window.openMediaModal(${item.id}, ${mediaIndex - 1})" class="absolute left-2 sm:left-6 top-1/2 -translate-y-1/2 bg-black/60 text-white p-3 sm:p-4 rounded-full hover:bg-accent transition-colors z-[110] backdrop-blur-md shadow-2xl border border-white/20">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" /></svg>
+                    </button>`;
+                }
+                if (mediaIndex < mediaUrls.length - 1) {
+                    html += `<button onclick="event.stopPropagation(); window.openMediaModal(${item.id}, ${mediaIndex + 1})" class="absolute right-2 sm:right-6 top-1/2 -translate-y-1/2 bg-black/60 text-white p-3 sm:p-4 rounded-full hover:bg-accent transition-colors z-[110] backdrop-blur-md shadow-2xl border border-white/20">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" /></svg>
+                    </button>`;
+                }
+                html += `<div class="absolute bottom-6 left-1/2 -translate-x-1/2 bg-black/60 text-white px-4 py-2 rounded-full text-xs font-bold tracking-widest z-[110] backdrop-blur-md border border-white/20 shadow-xl pointer-events-none">
+                    ${mediaIndex + 1} / ${mediaUrls.length}
+                </div>`;
+            }
+
+            container.innerHTML = html;
+            document.getElementById('media-modal').classList.remove('hidden');
+        };
+
+        window.closeMediaModal = function() {
+            document.getElementById('media-modal').classList.add('hidden');
+            document.getElementById('media-modal-content').innerHTML = '';
+        };
 
         window.renderMediaPreviews = function() {
             const container = els.mediaPreviewContainer;
@@ -1608,6 +1839,7 @@
 
         window.closeModal = function() {
             if (els.modal) els.modal.classList.add('hidden');
+            editingItemId = null;
         };
 
         window.deleteCurrentSection = function() {
@@ -1624,17 +1856,26 @@
             if (els.sidebarOverlay) els.sidebarOverlay.classList.toggle('hidden');
         };
 
-        window.showToast = function(message) {
+        window.showToast = function(message, isError = false) {
+            const toastMessage = document.getElementById('toast-message');
             const toast = document.getElementById('toast');
-            const toastMsg = document.getElementById('toast-message');
-            if (toast && toastMsg) {
-                toastMsg.innerText = message;
-                toast.classList.remove('translate-y-32', 'opacity-0');
-                if (window.toastTimeout) clearTimeout(window.toastTimeout);
-                window.toastTimeout = setTimeout(() => {
-                    toast.classList.add('translate-y-32', 'opacity-0');
-                }, 3000);
+            if (!toastMessage || !toast) return;
+            
+            toastMessage.innerText = message;
+            
+            if (isError) {
+                toast.classList.add('!bg-danger', '!border-danger');
+                toast.classList.remove('bg-sidebar', 'border-borderMain');
+            } else {
+                toast.classList.remove('!bg-danger', '!border-danger');
+                toast.classList.add('bg-sidebar', 'border-borderMain');
             }
+
+            toast.classList.remove('translate-y-32', 'opacity-0');
+            if (window.toastTimeout) clearTimeout(window.toastTimeout);
+            window.toastTimeout = setTimeout(() => {
+                toast.classList.add('translate-y-32', 'opacity-0');
+            }, isError ? 4500 : 3000);
         };
 
         document.addEventListener('keydown', function(event) {
@@ -1662,8 +1903,10 @@
                         const img = new Image();
                         img.onload = () => {
                             const canvas = document.createElement('canvas');
-                            const MAX_WIDTH = 800;
-                            const MAX_HEIGHT = 800;
+                            
+                            // Reduced max dimensions drastically to save local storage space
+                            const MAX_WIDTH = 500;
+                            const MAX_HEIGHT = 500;
                             let width = img.width;
                             let height = img.height;
 
@@ -1676,8 +1919,13 @@
                             const ctx = canvas.getContext('2d');
                             ctx.drawImage(img, 0, 0, width, height);
                             
-                            currentMediaList.push(canvas.toDataURL('image/jpeg', 0.7));
-                            window.renderMediaPreviews();
+                            // Compressed to 50% JPEG quality to prevent rapid QuotaExceeded errors
+                            const base64Data = canvas.toDataURL('image/jpeg', 0.5);
+                            currentBase64Image = base64Data;
+                            currentMediaList.push(base64Data);
+                            
+                            if (els.inputImage) els.inputImage.value = ''; 
+                            if (window.renderMediaPreviews) window.renderMediaPreviews();
                         }
                         img.src = e.target.result;
                     }
@@ -1686,19 +1934,23 @@
                     const reader = new FileReader();
                     reader.onload = (e) => {
                         currentMediaList.push(e.target.result);
-                        window.renderMediaPreviews();
+                        if (window.renderMediaPreviews) window.renderMediaPreviews();
                     }
                     reader.readAsDataURL(file);
                 }
             });
-            e.target.value = ''; // clear input
+            if (e.target) e.target.value = ''; // clear input
         };
 
         window.clearImage = function() {
+            currentBase64Image = '';
             currentMediaList = [];
-            window.renderMediaPreviews();
+            if (window.renderMediaPreviews) window.renderMediaPreviews();
+            
             if (els.inputImage) els.inputImage.value = '';
             if (els.inputFile) els.inputFile.value = '';
+            if (els.imagePreview) els.imagePreview.src = '';
+            if (els.imagePreviewContainer) els.imagePreviewContainer.classList.add('hidden');
         };
 
         window.addEventListener('paste', e => {
@@ -1707,7 +1959,6 @@
             for (let item of items) {
                 if (item.type.indexOf('image') === 0) {
                     const blob = item.getAsFile();
-                    // Process as file array
                     window.handleFileUpload({ target: { files: [blob] } });
                 }
             }
@@ -1736,17 +1987,12 @@
                     const data = JSON.parse(e.target.result);
                     if (data && data.sections && Array.isArray(data.sections)) {
                         
-                        // MERGE LOGIC: Combine imported data with existing data
+                        // MERGE LOGIC
                         data.sections.forEach(importedSection => {
-                            // Look for an existing collection with the exact same name
                             let existingSection = state.sections.find(s => s.title.toLowerCase() === importedSection.title.toLowerCase());
-                            
                             if (existingSection) {
-                                // Add items to the existing collection
                                 importedSection.items.forEach(importedItem => {
-                                    // Prevent exact duplicate items based on their unique ID
                                     if (!existingSection.items.find(i => i.id === importedItem.id)) {
-                                        // Ensure the ID doesn't clash with any other item across the app
                                         let isIdUnique = !state.sections.some(s => s.items.some(i => i.id === importedItem.id));
                                         let itemToAdd = { ...importedItem };
                                         if (!isIdUnique) {
@@ -1756,7 +2002,6 @@
                                     }
                                 });
                             } else {
-                                // Create a completely new collection tab
                                 let newSection = { ...importedSection };
                                 let isSecIdUnique = !state.sections.some(s => s.id === newSection.id);
                                 if (!isSecIdUnique) {
@@ -1766,17 +2011,25 @@
                             }
                         });
 
-                        // Merge Tracker Goals safely
-                        if (data.tracker && data.tracker.goals) {
-                            data.tracker.goals.forEach(importedGoal => {
-                                // Check if goal text already exists to avoid duplicates
-                                if (!state.tracker.goals.find(g => g.text.toLowerCase() === importedGoal.text.toLowerCase())) {
-                                    state.tracker.goals.push({
-                                        ...importedGoal,
-                                        id: Date.now() + Math.floor(Math.random() * 10000)
-                                    });
-                                }
-                            });
+                        // Merge Tracker
+                        if (data.tracker) {
+                            if (data.tracker.goals) {
+                                data.tracker.goals.forEach(importedGoal => {
+                                    const gName = importedGoal.name || '';
+                                    if (!state.tracker.goals.find(g => (g.name || '').toLowerCase() === gName.toLowerCase())) {
+                                        state.tracker.goals.push({ ...importedGoal, id: Date.now() + Math.floor(Math.random() * 10000) });
+                                    }
+                                });
+                            }
+                            if (data.tracker.archivedGoals) {
+                                data.tracker.archivedGoals.forEach(importedGoal => {
+                                    const gName = importedGoal.name || '';
+                                    if (!state.tracker.archivedGoals.find(g => (g.name || '').toLowerCase() === gName.toLowerCase())) {
+                                        state.tracker.archivedGoals.push({ ...importedGoal, id: Date.now() + Math.floor(Math.random() * 10000) });
+                                    }
+                                });
+                            }
+                            if (data.tracker.streak !== undefined) state.tracker.streak = data.tracker.streak;
                         }
 
                         saveData();
@@ -1784,12 +2037,12 @@
                         initializeTracker();
                         showToast('Data imported and merged safely!');
                     } else {
-                        showToast('Invalid backup file format.');
+                        showToast('Invalid backup file format.', true);
                     }
                 } catch (error) {
-                    showToast('Error reading backup file.');
+                    showToast('Error reading backup file.', true);
                 }
-                event.target.value = ''; // reset input
+                event.target.value = ''; 
             };
             reader.readAsText(file);
         };
