@@ -597,6 +597,7 @@
         let goalSecondsLeft = 0;
         let isGoalPaused = false;
         let activeGoalId = null;
+        let targetEndTime = 0;
 
         const alarmSounds = {
             bell: new Audio('https://assets.mixkit.co/active_storage/sfx/995/995-preview.mp3'),
@@ -1197,6 +1198,7 @@
             goalTotalSeconds = goal.totalSeconds;
             goalSecondsLeft = goalTotalSeconds;
             isGoalPaused = false;
+            targetEndTime = Date.now() + (goalSecondsLeft * 1000);
 
             document.getElementById('active-goal-name').innerText = goal.name;
             document.getElementById('tracker-active').classList.remove('hidden');
@@ -1214,7 +1216,7 @@
         function goalTick() {
             if (isGoalPaused) return;
             
-            goalSecondsLeft--;
+            goalSecondsLeft = Math.max(0, Math.round((targetEndTime - Date.now()) / 1000));
             updateTimerDisplay();
 
             if (goalSecondsLeft <= 0) {
@@ -1275,6 +1277,9 @@
 
         window.toggleTimerPause = function() {
             isGoalPaused = !isGoalPaused;
+            if (!isGoalPaused) {
+                targetEndTime = Date.now() + (goalSecondsLeft * 1000);
+            }
             const btn = document.getElementById('btn-goal-pause');
             btn.innerText = isGoalPaused ? "Resume" : "Pause";
             btn.className = isGoalPaused 
